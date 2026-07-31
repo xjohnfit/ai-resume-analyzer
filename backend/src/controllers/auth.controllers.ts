@@ -26,6 +26,12 @@ function setAuthCookies(
         httpOnly: true,
         secure: isProd,
         sameSite: 'lax',
+        maxAge: ACCESS_COOKIE_MAX_AGE,
+    });
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'lax',
         maxAge: REFRESH_COOKIE_MAX_AGE,
     });
 }
@@ -151,4 +157,13 @@ export async function logout(req: Request, res: Response) {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     res.json({ success: true });
+}
+
+export async function me(req: Request, res: Response) {
+    const user = await User.findById(req.user!.userId).select('email name');
+    if (!user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    res.json({ id: user.id, email: user.email, name: user.name });
 }

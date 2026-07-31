@@ -21,8 +21,8 @@ react-ai-resume-analyzer/
   - [x] Environment config validation (`src/config/env.ts`) — Zod-validated `.env`, fails fast at boot if anything required is missing.
   - [x] MongoDB Atlas connection (`src/config/db.ts`).
   - [x] Express app + entry point (`src/app.ts`, `src/server.ts`) — `GET /api/health` verified working end-to-end (env → DB → server).
-  - [ ] `User` model
-  - [ ] Auth routes: signup / login / refresh / logout / me
+  - [x] `User` model (hashed password, hashed/revocable refresh tokens per session).
+  - [x] Auth backend complete: `POST /api/auth/signup|login|refresh|logout`, `GET /api/auth/me`. Full cycle verified via curl — signup → protected `/me` → token rotation via `/refresh` → `/logout` → confirmed logged out.
   - [ ] Frontend: `login.tsx`, `signup.tsx`, session-aware loaders
 - [ ] **Phase 2 — Profile CRUD** (master resume data, no AI yet)
 - [ ] **Phase 3 — PDF generation from profile** (`@react-pdf/renderer`, no AI yet)
