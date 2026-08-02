@@ -57,7 +57,10 @@ form {
     @apply bg-gradient-to-b from-light-blue-100 to-light-blue-200 p-4 rounded-2xl;
   }
   .primary-button {
-    @apply primary-gradient text-white rounded-full px-4 py-2 cursor-pointer w-full;
+    @apply primary-gradient text-white rounded-full px-5 py-2.5 cursor-pointer w-full inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-transform hover:scale-[1.02];
+  }
+  .secondary-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 px-5 py-2.5 text-dark-200 font-medium whitespace-nowrap cursor-pointer transition-colors hover:bg-gray-50;
   }
   .resume-nav {
     @apply flex flex-row justify-between items-center p-4 border-b border-gray-200;
@@ -72,7 +75,10 @@ form {
     @apply flex flex-row items-center gap-2 border border-gray-200 rounded-lg p-2 shadow-sm;
   }
   .auth-button {
-    @apply primary-gradient rounded-full py-4 px-8 cursor-pointer w-[600px] max-md:w-full text-3xl font-semibold text-white;
+    @apply primary-gradient rounded-full py-3 px-8 cursor-pointer w-full text-lg font-semibold text-white transition-transform hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100;
+  }
+  .auth-card {
+    @apply flex flex-col gap-6 w-full max-w-md bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg;
   }
   .main-section {
     @apply flex flex-col items-center gap-8 pt-12 max-sm:mx-2 mx-15 pb-5;
@@ -82,6 +88,26 @@ form {
   }
   .resumes-section {
     @apply flex flex-wrap max-md:flex-col max-md:gap-4 gap-6 items-start max-md:items-center w-full max-w-[1850px] justify-evenly;
+  }
+
+  .stats-row {
+    @apply flex flex-wrap justify-center gap-4;
+  }
+
+  .stat-tile {
+    @apply flex flex-col items-center gap-1 px-8 py-4 min-w-35;
+  }
+
+  .stat-tile-value {
+    @apply text-3xl font-semibold text-gradient;
+  }
+
+  .stat-tile-label {
+    @apply text-sm text-dark-200;
+  }
+
+  .empty-state {
+    @apply flex flex-col items-center gap-4 w-full max-w-xl px-8 py-16 text-center;
   }
 
   .resume-card {

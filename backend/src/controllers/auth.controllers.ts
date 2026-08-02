@@ -9,6 +9,7 @@ import {
     verifyRefreshToken,
     hashToken,
 } from '../services/auth.service';
+import { resetUsageIfNeeded } from '../services/usage.service';
 import { env } from '../config/env';
 
 const { NODE_ENV } = env;
@@ -160,10 +161,21 @@ export async function logout(req: Request, res: Response) {
 }
 
 export async function me(req: Request, res: Response) {
-    const user = await User.findById(req.user!.userId).select('email name');
+    const user = await User.findById(req.user!.userId).select('email name subscription usage');
     if (!user) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    res.json({ id: user.id, email: user.email, name: user.name });
+    if (resetUsageIfNeeded(user)) {
+        await user.save();
+    }
+
+    res.json({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        subscription: user.subscription,
+        usage: user.usage,
+    });
 }
+

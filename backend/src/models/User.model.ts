@@ -6,13 +6,6 @@ interface RefreshTokenRecord {
     expiresAt: Date;
 }
 
-interface UserDocument {
-    name: string;
-    email: string;
-    passwordHash: string;
-    refreshTokens: RefreshTokenRecord[];
-}
-
 const refreshTokenSchema = new Schema<RefreshTokenRecord>(
     {
         jti: { type: String, required: true },
@@ -24,12 +17,63 @@ const refreshTokenSchema = new Schema<RefreshTokenRecord>(
     }
 );
 
+interface Subscription {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    stripePriceId?: string;
+    plan: "free" | "monthly" | "yearly";
+    status: "none" | "active" | "trialing" | "past_due" | "canceled" | "incomplete" | "unpaid";
+    currentPeriodEnd?: Date;
+    cancelAtPeriodEnd: boolean;
+}
+
+const subscriptionSchema = new Schema<Subscription>(
+    {
+        stripeCustomerId: { type: String },
+        stripeSubscriptionId: { type: String },
+        stripePriceId: { type: String },
+        plan: { type: String, enum: ["free", "monthly", "yearly"], default: "free" },
+        status: {
+            type: String,
+            enum: ["none", "active", "trialing", "past_due", "canceled", "incomplete", "unpaid"],
+            default: "none",
+        },
+        currentPeriodEnd: { type: Date },
+        cancelAtPeriodEnd: { type: Boolean, default: false },
+    },
+    { _id: false }
+);
+
+interface Usage {
+    analysesThisMonth: number;
+    resetAt: Date;
+}
+
+const usageSchema = new Schema<Usage>(
+    {
+        analysesThisMonth: { type: Number, default: 0 },
+        resetAt: { type: Date, default: Date.now },
+    },
+    { _id: false }
+);
+
+export interface UserDocument {
+    name: string;
+    email: string;
+    passwordHash: string;
+    refreshTokens: RefreshTokenRecord[];
+    subscription: Subscription;
+    usage: Usage;
+}
+
 const userSchema = new Schema<UserDocument>(
     {
         email: { type: String, required: true, unique: true, lowercase: true, trim: true },
         passwordHash: { type: String, required: true },
         name: { type: String, required: true, trim: true },
-        refreshTokens: { type: [refreshTokenSchema], default: []},
+        refreshTokens: { type: [refreshTokenSchema], default: [] },
+        subscription: { type: subscriptionSchema, default: () => ({}) },
+        usage: { type: usageSchema, default: () => ({}) },
     },
     {
         timestamps: true

@@ -1,4 +1,4 @@
-import { Form, redirect, useActionData, useNavigation } from "react-router";
+import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import type { Route } from "./+types/signup";
 import { apiFetch } from "~/lib/api.server";
 
@@ -28,7 +28,7 @@ export async function action({ request }: Route.ActionArgs) {
         headers.append("Set-Cookie", cookie);
     }
 
-    return redirect("/", { headers });
+    return redirect("/dashboard", { headers });
 }
 
 export default function Signup() {
@@ -37,21 +37,30 @@ export default function Signup() {
     const isSubmitting = navigation.state === "submitting";
 
     return (
-        <main className="flex min-h-screen items-center justify-center">
-            <div className="w-full max-w-sm">
-                <h1 className="mb-6 text-2xl font-semibold">Create your account</h1>
-                {actionData?.error && <p className="mb-4 text-red-500">{actionData.error}</p>}
+        <main className="flex min-h-screen items-center justify-center bg-[url('/images/bg-auth.svg')] bg-cover px-4">
+            <div className="auth-card">
+                <div className="flex flex-col gap-2 text-center">
+                    <Link to="/">
+                        <p className="text-2xl font-bold text-gradient">APPLYZE</p>
+                    </Link>
+                    <h1 className="text-2xl font-semibold">Create your account</h1>
+                    <p className="text-dark-200">Track applications and get AI-powered resume feedback.</p>
+                </div>
+
+                {actionData?.error && (
+                    <p className="rounded-lg bg-badge-red px-4 py-2 text-sm text-badge-red-text">{actionData.error}</p>
+                )}
 
                 <Form method="post" className="flex flex-col gap-4">
-                    <div>
+                    <div className="form-div">
                         <label htmlFor="name">Name</label>
                         <input id="name" name="name" type="text" required />
                     </div>
-                    <div>
+                    <div className="form-div">
                         <label htmlFor="email">Email</label>
                         <input id="email" name="email" type="email" required />
                     </div>
-                    <div>
+                    <div className="form-div">
                         <label htmlFor="password">Password</label>
                         <input id="password" name="password" type="password" required minLength={8} />
                     </div>
@@ -59,6 +68,13 @@ export default function Signup() {
                         {isSubmitting ? "Creating account..." : "Sign up"}
                     </button>
                 </Form>
+
+                <p className="text-center text-dark-200">
+                    Already have an account?{" "}
+                    <Link to="/login" className="font-semibold text-black">
+                        Log in
+                    </Link>
+                </p>
             </div>
         </main>
     );
