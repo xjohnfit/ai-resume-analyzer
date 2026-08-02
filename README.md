@@ -24,12 +24,13 @@ react-ai-resume-analyzer/
   - [x] `User` model (hashed password, hashed/revocable refresh tokens per session).
   - [x] Auth backend complete: `POST /api/auth/signup|login|refresh|logout`, `GET /api/auth/me`. Full cycle verified via curl — signup → protected `/me` → token rotation via `/refresh` → `/logout` → confirmed logged out.
   - [x] Frontend: `login.tsx`, `signup.tsx`, `api.server.ts`/`session.server.ts` (SSR cookie forwarding + `requireUser`). Home route protected and verified in-browser end-to-end.
-- [ ] **Phase 2 — Profile CRUD** (master resume data, no AI yet)
-- [ ] **Phase 3 — PDF generation from profile** (`@react-pdf/renderer`, no AI yet)
-- [ ] **Phase 4 — Application tracker CRUD + dashboard** (still no AI)
-- [ ] **Phase 5 — LLM fit-scoring** (Claude via LangChain.js, direct prompt, no RAG yet)
-- [ ] **Phase 6 — Embeddings + RAG grounding** (OpenAI embeddings + MongoDB Atlas Vector Search)
-- [ ] **Phase 7 — Stretch/polish** (status UX, resume version history, cover letters, thumbnails, rate limiting, tests)
+- [ ] **Phase 2 — Subscription billing (Stripe).** In progress. Free tier (3 AI analyses/month) + paid tier ($9/mo or ~$79/yr), Stripe Checkout (hosted) + Billing Portal, embedded on `User` model. See plan doc for the 9-step build sequence.
+- [ ] **Phase 3 — Profile CRUD** (master resume data, no AI yet)
+- [ ] **Phase 4 — PDF generation from profile** (`@react-pdf/renderer`, no AI yet)
+- [ ] **Phase 5 — Application tracker CRUD + dashboard** (still no AI)
+- [ ] **Phase 6 — LLM fit-scoring** (Claude via LangChain.js, direct prompt, no RAG yet — this is where Phase 2's gating middleware gets wired in)
+- [ ] **Phase 7 — Embeddings + RAG grounding** (OpenAI embeddings + MongoDB Atlas Vector Search)
+- [ ] **Phase 8 — Stretch/polish** (status UX, resume version history, cover letters, thumbnails, rate limiting, tests)
 
 ## Key architecture decisions
 
@@ -64,7 +65,7 @@ npm run build        # tsc -> dist/
 npm run start        # node dist/server.js
 ```
 
-Requires a `.env` file with: `PORT`, `MONGODB_URI`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `FRONTEND_URL`, plus (from Phase 5/6 onward) `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`.
+Requires a `.env` file with: `PORT`, `MONGODB_URI`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `FRONTEND_URL`, plus (from Phase 2 onward) `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_YEARLY`, and (from Phase 6/7 onward) `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`.
 
 ---
 
