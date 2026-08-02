@@ -15,7 +15,7 @@ react-ai-resume-analyzer/
 ## Status
 
 - [x] **Phase 0 — Repo restructure.** Moved the original React Router app into `/frontend`, created `/backend` as a sibling directory, updated `.gitignore` for both workspaces.
-- [ ] **Phase 1 — Backend scaffold + real JWT auth.** In progress.
+- [x] **Phase 1 — Backend scaffold + real JWT auth.** Complete.
   - [x] `backend/` initialized with TypeScript, Express 5, Mongoose, bcrypt, jsonwebtoken, cookie-parser, cors, dotenv, zod.
   - [x] `tsconfig.json` (strict mode, NodeNext, explicit `"types": ["node"]` — required as of TypeScript 7) and `dev`/`build`/`start` npm scripts.
   - [x] Environment config validation (`src/config/env.ts`) — Zod-validated `.env`, fails fast at boot if anything required is missing.
@@ -23,7 +23,7 @@ react-ai-resume-analyzer/
   - [x] Express app + entry point (`src/app.ts`, `src/server.ts`) — `GET /api/health` verified working end-to-end (env → DB → server).
   - [x] `User` model (hashed password, hashed/revocable refresh tokens per session).
   - [x] Auth backend complete: `POST /api/auth/signup|login|refresh|logout`, `GET /api/auth/me`. Full cycle verified via curl — signup → protected `/me` → token rotation via `/refresh` → `/logout` → confirmed logged out.
-  - [ ] Frontend: `login.tsx`, `signup.tsx`, session-aware loaders
+  - [x] Frontend: `login.tsx`, `signup.tsx`, `api.server.ts`/`session.server.ts` (SSR cookie forwarding + `requireUser`). Home route protected and verified in-browser end-to-end.
 - [ ] **Phase 2 — Profile CRUD** (master resume data, no AI yet)
 - [ ] **Phase 3 — PDF generation from profile** (`@react-pdf/renderer`, no AI yet)
 - [ ] **Phase 4 — Application tracker CRUD + dashboard** (still no AI)
@@ -59,12 +59,12 @@ Express + TypeScript, MongoDB via Mongoose, LangChain.js (Anthropic + OpenAI emb
 ```bash
 cd backend
 npm install
-npm run dev         # tsx watch, http://localhost:5000 (once server.ts exists)
+npm run dev         # tsx watch, http://localhost:5000
 npm run build        # tsc -> dist/
 npm run start        # node dist/server.js
 ```
 
-Requires a `.env` file (see `.env.example` once added) with at minimum: `MONGODB_URI`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`.
+Requires a `.env` file with: `PORT`, `MONGODB_URI`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `FRONTEND_URL`, plus (from Phase 5/6 onward) `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`.
 
 ---
 
