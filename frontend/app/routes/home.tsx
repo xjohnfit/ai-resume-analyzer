@@ -11,7 +11,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export function meta({ }: Route.MetaArgs) {
     return [
-        { title: "Resumind" },
+        { title: "Applyze" },
         { name: "description", content: "Smart feedback for your dream job." },
     ];
 }

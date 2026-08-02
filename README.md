@@ -1,6 +1,6 @@
-# AI Resume Analyzer / Job Application Tracker
+# Applyze
 
-A personal MERN app: maintain one master profile, generate tailored PDF resumes from it, track job applications individually, and get an AI-generated fit/ATS report per application — grounded in your real experience via retrieval (RAG), so the AI can't invent qualifications.
+An AI-powered resume analyzer and job application tracker (MERN): maintain one master profile, generate tailored PDF resumes from it, track job applications individually, and get an AI-generated fit/ATS report per application — grounded in your real experience via retrieval (RAG), so the AI can't invent qualifications.
 
 Full architecture and phased build plan: see `frontend`/`backend` sections below, and the original plan doc for schema/API/LangChain design details.
 
