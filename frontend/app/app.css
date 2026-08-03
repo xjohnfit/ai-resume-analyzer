@@ -18,35 +18,42 @@
   --color-badge-yellow-text: #73321b;
 }
 
-html,
-body {
-  @apply bg-white;
-}
+@layer base {
+  html,
+  body {
+    @apply bg-white;
+  }
 
-main {
-  @apply min-h-screen pt-10;
-}
-h1 {
-  @apply max-sm:text-[3rem] text-6xl  text-gradient leading-tight xl:tracking-[-2px] font-semibold;
-}
+  main {
+    @apply min-h-screen pt-10;
+  }
+  h1 {
+    @apply max-sm:text-[3rem] text-6xl  text-gradient leading-tight xl:tracking-[-2px] font-semibold;
+  }
 
-h2 {
-  @apply max-sm:text-xl text-3xl text-dark-200;
-}
+  h2 {
+    @apply max-sm:text-xl text-3xl text-dark-200;
+  }
 
-label {
-  @apply text-dark-200;
-}
-input {
-  @apply w-full p-4 inset-shadow rounded-2xl focus:outline-none bg-white;
-}
+  label {
+    @apply text-dark-200;
+  }
+  input:not([type="checkbox"]):not([type="radio"]) {
+    @apply w-full p-4 inset-shadow rounded-2xl focus:outline-none bg-white;
+  }
 
-textarea {
-  @apply w-full p-4 inset-shadow rounded-2xl focus:outline-none bg-white;
-}
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply w-4 h-4 accent-[#606beb] cursor-pointer;
+  }
 
-form {
-  @apply flex flex-col items-start gap-8 w-full;
+  textarea {
+    @apply w-full p-4 inset-shadow rounded-2xl focus:outline-none bg-white;
+  }
+
+  form {
+    @apply flex flex-col items-start gap-8 w-full;
+  }
 }
 
 @layer components {
@@ -61,6 +68,10 @@ form {
   }
   .secondary-button {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 px-5 py-2.5 text-dark-200 font-medium whitespace-nowrap cursor-pointer transition-colors hover:bg-gray-50;
+  }
+
+  .logout-button {
+    @apply border-badge-red text-badge-red-text hover:bg-badge-red;
   }
   .resume-nav {
     @apply flex flex-row justify-between items-center p-4 border-b border-gray-200;
@@ -87,23 +98,40 @@ form {
     @apply flex flex-col items-center gap-8 max-w-4xl text-center max-sm:gap-4;
   }
   .resumes-section {
-    @apply flex flex-wrap max-md:flex-col max-md:gap-4 gap-6 items-start max-md:items-center w-full max-w-[1850px] justify-evenly;
+    @apply grid w-full items-start gap-4;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 
-  .stats-row {
-    @apply flex flex-wrap justify-center gap-4;
+  .dashboard-header {
+    @apply flex w-full max-w-[1200px] mx-auto flex-col gap-4 sm:flex-row sm:items-center sm:justify-between;
   }
 
-  .stat-tile {
-    @apply flex flex-col items-center gap-1 px-8 py-4 min-w-35;
+  .dashboard-title {
+    @apply text-lg font-semibold text-black bg-none bg-clip-border;
   }
 
-  .stat-tile-value {
-    @apply text-3xl font-semibold text-gradient;
-  }
-
-  .stat-tile-label {
+  .dashboard-subtitle {
     @apply text-sm text-dark-200;
+  }
+
+  .dashboard-stats-inline {
+    @apply mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-dark-200;
+  }
+
+  .dashboard-tabs {
+    @apply mt-3 flex flex-wrap gap-2;
+  }
+
+  .tab-button {
+    @apply cursor-pointer whitespace-nowrap rounded-full border border-gray-200 px-4 py-1.5 text-sm font-medium text-dark-200 transition-colors;
+
+    &:not(.tab-button-active):hover {
+      @apply bg-gray-50;
+    }
+  }
+
+  .tab-button-active {
+    @apply primary-gradient border-transparent text-white;
   }
 
   .empty-state {
@@ -111,11 +139,11 @@ form {
   }
 
   .resume-card {
-    @apply flex flex-col gap-8 h-[560px] w-[350px] lg:w-[430px] xl:w-[490px] bg-white rounded-2xl p-4;
+    @apply flex flex-col gap-3 w-full bg-white rounded-xl p-3 shadow-sm transition-shadow hover:shadow-md;
   }
 
   .resume-card-header {
-    @apply flex flex-row gap-2 justify-between min-h-[110px] max-sm:flex-col items-center max-md:justify-center max-md:items-center;
+    @apply flex flex-row items-center justify-between gap-2;
   }
 
   .feedback-section {
@@ -139,6 +167,47 @@ form {
   }
   .uploader-selected-file {
     @apply flex items-center justify-between p-3 bg-gray-50 rounded-2xl;
+  }
+
+  .profile-form {
+    @apply gap-6 max-w-4xl;
+
+    input:not([type="checkbox"]),
+    textarea {
+      @apply p-2.5 text-base rounded-xl;
+    }
+
+    h3 {
+      @apply text-lg mb-1;
+    }
+
+    label {
+      @apply text-sm;
+    }
+  }
+
+  .profile-entry-card {
+    @apply flex w-full flex-col gap-2 p-3;
+  }
+
+  .profile-form-grid {
+    @apply grid w-full grid-cols-1 gap-3 sm:grid-cols-2;
+  }
+
+  .patterns-letter {
+    @apply mx-auto flex w-full max-w-300 flex-col gap-3 p-6 text-[15px] leading-relaxed text-dark-200 sm:p-10;
+
+    h2 {
+      @apply mt-4 text-lg font-semibold text-black first:mt-0;
+    }
+  }
+
+  .patterns-letter-section {
+    @apply flex flex-col gap-3;
+  }
+
+  .patterns-roadmap-list {
+    @apply flex list-decimal flex-col gap-3 pl-5;
   }
 }
 

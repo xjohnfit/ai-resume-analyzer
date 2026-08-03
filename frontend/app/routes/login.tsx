@@ -36,41 +36,40 @@ export default function Login() {
   const isSubmitting = navigation.state === "submitting";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[url('/images/bg-auth.svg')] bg-cover px-4">
-      <div className="auth-card">
-        <div className="flex flex-col gap-2 text-center">
-          <Link to="/">
-            <p className="text-2xl font-bold text-gradient">APPLYZE</p>
-          </Link>
-          <h1 className="text-2xl font-semibold">Log in</h1>
-          <p className="text-dark-200">Welcome back — enter your details to continue.</p>
-        </div>
-
-        {actionData?.error && (
-          <p className="rounded-lg bg-badge-red px-4 py-2 text-sm text-badge-red-text">{actionData.error}</p>
-        )}
-
-        <Form method="post" className="flex flex-col gap-4">
-          <div className="form-div">
-            <label htmlFor="email">Email</label>
-            <input id="email" name="email" type="email" required />
-          </div>
-          <div className="form-div">
-            <label htmlFor="password">Password</label>
-            <input id="password" name="password" type="password" required />
-          </div>
-          <button className="auth-button" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Logging in..." : "Log in"}
-          </button>
-        </Form>
-
-        <p className="text-center text-dark-200">
-          Don&apos;t have an account?{" "}
-          <Link to="/signup" className="font-semibold text-black">
-            Sign up
-          </Link>
-        </p>
+    <div className="auth-card">
+      <div className="flex flex-col gap-2 text-center">
+        <Link to="/">
+          <p className="text-2xl font-bold text-gradient">APPLYZE</p>
+        </Link>
+        <h1 className="text-2xl font-semibold">Log in</h1>
+        <p className="text-dark-200">Welcome back — enter your details to continue.</p>
       </div>
-    </main>
+
+      {actionData?.error && (
+        <p className="rounded-lg bg-badge-red px-4 py-2 text-sm text-badge-red-text">{actionData.error}</p>
+      )}
+
+      <Form method="post" className="flex flex-col gap-4">
+        <div className="form-div">
+          <label htmlFor="email">Email</label>
+          <input id="email" name="email" type="email" required />
+        </div>
+        <div className="form-div">
+          <label htmlFor="password">Password</label>
+          <input id="password" name="password" type="password" required />
+        </div>
+        <button className="auth-button" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Logging in..." : "Log in"}
+        </button>
+      </Form>
+
+      <p className="text-center text-dark-200">
+        Don&apos;t have an account?{" "}
+        <Link to="/signup" className="font-semibold text-black">
+          Sign up
+        </Link>
+      </p>
+    </div>
   );
+
 }

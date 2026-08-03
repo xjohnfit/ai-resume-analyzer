@@ -5,6 +5,8 @@ interface Job {
     requiredSkills: string[];
 }
 
+type ApplicationStatus = "live" | "sent" | "rejected" | "skipped";
+
 interface Resume {
     id: string;
     companyName?: string;
@@ -12,6 +14,31 @@ interface Resume {
     imagePath: string;
     resumePath: string;
     feedback: Feedback;
+    status: ApplicationStatus;
+    statusNote: string;
+}
+
+interface RecurringPattern {
+    id: string;
+    title: string;
+    frequency: number;
+    companies: string[];
+    note: string;
+}
+
+interface RecommendedTechnology {
+    id: string;
+    name: string;
+    reason: string;
+    relatedGapId: string;
+}
+
+interface LearningRoadmapStep {
+    id: string;
+    order: number;
+    title: string;
+    description: string;
+    relatedGapId: string;
 }
 
 interface Feedback {

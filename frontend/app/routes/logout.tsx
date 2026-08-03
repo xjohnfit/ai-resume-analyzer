@@ -12,5 +12,5 @@ export async function action({ request }: Route.ActionArgs) {
     headers.append("Set-Cookie", cookie);
   }
 
-  return redirect("/login", { headers });
+  return redirect("/", { headers });
 }

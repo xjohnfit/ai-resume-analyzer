@@ -1,6 +1,9 @@
-import { Link, redirect } from "react-router";
+import { useEffect } from "react";
+import { Link, Outlet, redirect, useLocation, useNavigate } from "react-router";
+import { Sparkles, UserCog, FileText, LayoutDashboard, Check, X } from "lucide-react";
 import type { Route } from "./+types/landing";
 import { getUser } from "~/lib/session.server";
+
 
 export async function loader({ request }: Route.LoaderArgs) {
     const user = await getUser(request);
@@ -21,18 +24,22 @@ const features = [
     {
         title: "AI resume scoring",
         description: "Submit a resume and job description and get an instant AI-generated score covering ATS compatibility, tone, content, structure, and skills match.",
+        icon: Sparkles,
     },
     {
         title: "Build your profile your way",
         description: "Paste your introduction, work history, education, skills, and projects directly — or upload your existing resume as a PDF and have it parsed and pre-filled automatically.",
+        icon: UserCog,
     },
     {
         title: "A tailored PDF for every job",
         description: "Applyze generates a dedicated, properly formatted resume PDF for each job description you submit — ready to download.",
+        icon: FileText,
     },
     {
         title: "A page for every application",
         description: "Every generated resume gets its own page with its score, feedback, and download link. See them all listed by job application and date on your dashboard.",
+        icon: LayoutDashboard,
     },
 ];
 
@@ -50,6 +57,20 @@ const plans = [
 ];
 
 export default function Landing() {
+
+    const location = useLocation();
+    const navigate = useNavigate();
+    const isModalOpen = location.pathname === "/login" || location.pathname === "/signup";
+
+    useEffect(() => {
+        if (!isModalOpen) return;
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === "Escape") navigate("/");
+        }
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isModalOpen, navigate]);
+
     return (
         <main className="bg-[url('/images/bg-main.svg')] bg-cover">
             <nav className="navbar">
@@ -76,6 +97,7 @@ export default function Landing() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {features.map((feature) => (
                             <div key={feature.title} className="gradient-border flex flex-col gap-2 p-6">
+                                <feature.icon className="h-6 w-6 text-[#606beb]" />
                                 <h3 className="text-xl font-semibold">{feature.title}</h3>
                                 <p className="text-dark-200">{feature.description}</p>
                             </div>
@@ -92,7 +114,10 @@ export default function Landing() {
                             <div key={plan.name} className="gradient-border flex flex-col items-center gap-3 p-8 text-center">
                                 <h3 className="text-xl font-semibold">{plan.name}</h3>
                                 <p className="text-3xl font-semibold">{plan.price}</p>
-                                <p className="text-dark-200">{plan.detail}</p>
+                                <p className="flex items-center gap-2 text-dark-200">
+                                    <Check className="h-4 w-4 shrink-0 text-[#606beb]" />
+                                    {plan.detail}
+                                </p>
                                 <Link to="/signup" className="primary-button w-fit">Get started</Link>
                             </div>
                         ))}
@@ -103,6 +128,26 @@ export default function Landing() {
                     &copy; {new Date().getFullYear()} Applyze. All rights reserved.
                 </footer>
             </section>
+
+            {isModalOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+                    onClick={() => navigate("/")}
+                >
+                    <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            type="button"
+                            onClick={() => navigate("/")}
+                            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md hover:bg-gray-50"
+                            aria-label="Close"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                        <Outlet />
+                    </div>
+                </div>
+            )}
+
         </main>
     );
 }
