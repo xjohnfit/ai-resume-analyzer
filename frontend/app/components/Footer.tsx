@@ -10,7 +10,12 @@ const productLinks = [
 const accountLinks = [
     { to: "/login", label: "Log in" },
     { to: "/signup", label: "Sign up" },
-    { to: "/billing", label: "Billing" },
+    { to: "/settings?section=billing", label: "Billing" },
+    { to: "/settings", label: "Settings" },
+];
+
+const supportLinks = [
+    { to: "/contact", label: "Contact" },
 ];
 
 const Footer = () => {
@@ -39,6 +44,14 @@ const Footer = () => {
                     <div className="flex flex-col gap-2">
                         <p className="text-sm font-semibold text-black">Account</p>
                         {accountLinks.map((link) => (
+                            <Link key={link.to} to={link.to} className="text-sm text-dark-200 hover:text-black">
+                                {link.label}
+                            </Link>
+                        ))}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <p className="text-sm font-semibold text-black">Support</p>
+                        {supportLinks.map((link) => (
                             <Link key={link.to} to={link.to} className="text-sm text-dark-200 hover:text-black">
                                 {link.label}
                             </Link>

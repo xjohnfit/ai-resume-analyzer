@@ -25,7 +25,7 @@ export default function Patterns() {
             <MobileNavbar />
             <section className="main-section items-stretch">
                 <div className="w-full max-w-300 mx-auto">
-                    <h1 className="dashboard-title md:text-3xl">Recurring Patterns Worth Knowing</h1>
+                    <h1 className="dashboard-title md:text-3xl tracking-wide">Recurring Patterns Worth Knowing</h1>
                     <p className="dashboard-subtitle">Your biggest recurring technical gaps across applications, ranked by how often they show up.</p>
                 </div>
 

@@ -1,5 +1,5 @@
 import { Form, Link } from "react-router";
-import { Home, User, LogOut, Lightbulb } from "lucide-react";
+import { Home, User, LogOut, Lightbulb, Settings, Mail } from "lucide-react";
 
 const Navbar = () => {
     return (
@@ -19,6 +19,14 @@ const Navbar = () => {
                 <Link to="/patterns" className="secondary-button">
                     <Lightbulb className="h-4 w-4" />
                     Patterns
+                </Link>
+                <Link to="/settings" className="secondary-button">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                </Link>
+                <Link to="/contact" className="secondary-button">
+                    <Mail className="h-4 w-4" />
+                    Contact
                 </Link>
                 <Form method="post" action="/logout" className="w-fit">
                     <button type="submit" className="secondary-button logout-button">

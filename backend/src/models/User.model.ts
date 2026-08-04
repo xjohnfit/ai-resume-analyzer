@@ -17,12 +17,12 @@ const refreshTokenSchema = new Schema<RefreshTokenRecord>(
     }
 );
 
-interface Subscription {
+export interface Subscription {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
     stripePriceId?: string;
     plan: "free" | "monthly" | "yearly";
-    status: "none" | "active" | "trialing" | "past_due" | "canceled" | "incomplete" | "unpaid";
+    status: "none" | "active" | "trialing" | "past_due" | "canceled" | "incomplete" | "incomplete_expired" | "unpaid" | "paused";
     currentPeriodEnd?: Date;
     cancelAtPeriodEnd: boolean;
 }
@@ -35,7 +35,7 @@ const subscriptionSchema = new Schema<Subscription>(
         plan: { type: String, enum: ["free", "monthly", "yearly"], default: "free" },
         status: {
             type: String,
-            enum: ["none", "active", "trialing", "past_due", "canceled", "incomplete", "unpaid"],
+            enum: ["none", "active", "trialing", "past_due", "canceled", "incomplete", "incomplete_expired", "unpaid", "paused"],
             default: "none",
         },
         currentPeriodEnd: { type: Date },

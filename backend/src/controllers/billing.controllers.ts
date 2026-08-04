@@ -1,8 +1,16 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { User } from '../models/User.model';
+import { User, type Subscription } from '../models/User.model';
 import Stripe from 'stripe';
-import { stripe, createCheckoutSession, createBillingPortalSession, constructWebhookEvent } from '../services/stripe.service';
+import {
+    stripe,
+    createCheckoutSession,
+    createBillingPortalSession,
+    constructWebhookEvent,
+    cancelSubscriptionAtPeriodEnd,
+    reactivateSubscription,
+    changeSubscriptionPlan,
+} from '../services/stripe.service';
 
 import { env } from '../config/env';
 
@@ -49,6 +57,64 @@ export async function portal(req: Request, res: Response) {
     });
 
     res.json({ url: session.url });
+}
+
+export async function cancelSubscription(req: Request, res: Response) {
+    const user = await User.findById(req.user!.userId);
+    if (!user?.subscription.stripeSubscriptionId) {
+        return res.status(400).json({ error: 'No active subscription' });
+    }
+
+    const subscription = await cancelSubscriptionAtPeriodEnd(user.subscription.stripeSubscriptionId);
+    user.subscription.cancelAtPeriodEnd = true;
+    user.subscription.status = subscription.status as unknown as Subscription['status'];
+    user.subscription.currentPeriodEnd = new Date(subscription.items.data[0].current_period_end * 1000);
+    await user.save();
+
+    res.json({ cancelAtPeriodEnd: true });
+}
+
+export async function reactivateSubscriptionController(req: Request, res: Response) {
+    const user = await User.findById(req.user!.userId);
+    if (!user?.subscription.stripeSubscriptionId) {
+        return res.status(400).json({ error: 'No active subscription' });
+    }
+
+    const subscription = await reactivateSubscription(user.subscription.stripeSubscriptionId);
+    user.subscription.cancelAtPeriodEnd = false;
+    user.subscription.status = subscription.status as unknown as Subscription['status'];
+    user.subscription.currentPeriodEnd = new Date(subscription.items.data[0].current_period_end * 1000);
+    await user.save();
+
+    res.json({ cancelAtPeriodEnd: false });
+}
+
+const changePlanSchema = z.object({
+    plan: z.enum(['monthly', 'yearly']),
+});
+
+export async function changePlan(req: Request, res: Response) {
+    const parsed = changePlanSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    const user = await User.findById(req.user!.userId);
+    if (!user?.subscription.stripeSubscriptionId) {
+        return res.status(400).json({ error: 'No active subscription' });
+    }
+
+    const priceId =
+        parsed.data.plan === 'monthly' ? STRIPE_PRICE_ID_MONTHLY : STRIPE_PRICE_ID_YEARLY;
+
+    const subscription = await changeSubscriptionPlan(user.subscription.stripeSubscriptionId, priceId);
+    user.subscription.plan = parsed.data.plan;
+    user.subscription.stripePriceId = priceId;
+    user.subscription.status = subscription.status as unknown as Subscription['status'];
+    user.subscription.currentPeriodEnd = new Date(subscription.items.data[0].current_period_end * 1000);
+    await user.save();
+
+    res.json({ plan: parsed.data.plan });
 }
 
 export async function handleStripeWebhook(req: Request, res: Response) {

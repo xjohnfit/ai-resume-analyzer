@@ -7,10 +7,11 @@ export default [
   ]),
   route("dashboard", "routes/dashboard.tsx"),
   route("pricing", "routes/pricing.tsx"),
-  route("billing", "routes/billing.tsx"),
   route("profile", "routes/profile.tsx"),
   route("profile/parse-resume", "routes/profile.parse-resume.ts"),
   route("profile/photo-upload-signature", "routes/profile.photo-upload-signature.ts"),
   route("patterns", "routes/patterns.tsx"),
+  route("settings", "routes/settings.tsx"),
+  route("contact", "routes/contact.tsx"),
   route("logout", "routes/logout.tsx"),
 ] satisfies RouteConfig;

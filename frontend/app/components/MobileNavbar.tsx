@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Form, Link } from "react-router";
-import { Home, User, LogOut, Menu, X, Lightbulb } from "lucide-react";
+import { Home, User, LogOut, Menu, X, Lightbulb, Settings, Mail } from "lucide-react";
 
 const MobileNavbar = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -35,6 +35,14 @@ const MobileNavbar = () => {
                     <Link to="/patterns" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
                         <Lightbulb className="h-4 w-4" />
                         Patterns
+                    </Link>
+                    <Link to="/settings" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
+                        <Settings className="h-4 w-4" />
+                        Settings
+                    </Link>
+                    <Link to="/contact" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
+                        <Mail className="h-4 w-4" />
+                        Contact
                     </Link>
                     <Form method="post" action="/logout">
                         <button type="submit" className="secondary-button logout-button w-full justify-start">
