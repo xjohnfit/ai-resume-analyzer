@@ -29,6 +29,7 @@ const ENDPOINT_BY_INTENT: Record<string, string> = {
     cancel: "/api/billing/cancel",
     reactivate: "/api/billing/reactivate",
     "change-plan": "/api/billing/change-plan",
+    "resend-verification": "/api/auth/resend-verification",
 };
 
 export async function action({ request }: Route.ActionArgs) {
@@ -186,6 +187,7 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                 cancel: "Your subscription will end at the end of the current period.",
                 reactivate: "Your subscription has been reactivated.",
                 "change-plan": "Your plan has been updated.",
+                "resend-verification": "Verification email sent — check your inbox.",
             };
             addToast(messages[fetcher.data.intent as string] ?? "Done.", "success");
             setActiveModal(null);
@@ -341,15 +343,39 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                     Security
                                 </h2>
 
-                                <div className="flex flex-col gap-1 border-b border-black/10 pb-6">
+                                <div className="flex flex-col gap-2 border-b border-black/10 pb-6">
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="flex items-center gap-2 text-sm font-medium text-black">
                                             <ShieldCheck className="h-4 w-4 text-[#606beb]" />
                                             Email verification
                                         </p>
-                                        <ComingSoon />
+                                        {user.emailVerified ? (
+                                            <span className="w-fit rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                                                Verified
+                                            </span>
+                                        ) : (
+                                            <span className="w-fit rounded-full border border-yellow-200 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700">
+                                                Not verified
+                                            </span>
+                                        )}
                                     </div>
-                                    <p className="text-sm text-dark-200">Verify your email address to secure your account.</p>
+                                    {user.emailVerified ? (
+                                        <p className="text-sm text-dark-200">Your email address is verified.</p>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm text-dark-200">Verify your email address to secure your account.</p>
+                                            <fetcher.Form method="post">
+                                                <input type="hidden" name="intent" value="resend-verification" />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isBusy}
+                                                    className="secondary-button w-fit border-blue-200 bg-blue-50 px-3 py-1.5 text-xs hover:border-blue-300 hover:bg-blue-100"
+                                                >
+                                                    {isBusy ? "Sending..." : "Resend verification email"}
+                                                </button>
+                                            </fetcher.Form>
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-col gap-1">
