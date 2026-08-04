@@ -8,6 +8,7 @@ const { JWT_ACCESS_SECRET } = env;
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_TTL = "15m";
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+export const EMAIL_VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, SALT_ROUNDS);
@@ -50,6 +51,15 @@ export function createRefreshToken(userId: string) {
         jti,
         hashedToken: hashToken(token),
         expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+    };
+}
+
+export function createEmailVerificationToken() {
+    const token = crypto.randomUUID();
+    return {
+        token,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TOKEN_TTL_MS),
     };
 }
 

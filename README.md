@@ -43,7 +43,8 @@ react-ai-resume-analyzer/
   - [x] `settings.tsx` shipped — sidebar (Account/Billing/Security/Danger zone) + tinted content panels, deliberately distinct from the rest of the app's card-grid pages.
   - [x] Standalone `/billing` page removed and folded into Settings' Billing tab — real in-app plan switching, cancel/reactivate, and payment-method management (new `/api/billing/cancel|reactivate|change-plan` endpoints), not just a link out to Stripe's hosted portal.
   - [x] Account deletion — `DELETE /api/auth/me` (password re-confirm, cancels any active Stripe subscription first, deletes Profile + User, clears cookies) with a type-to-confirm modal in Settings' Danger zone. Verified end-to-end via curl (wrong password rejected, correct password deletes and logs out, re-login fails).
-  - [ ] Email verification, password recovery, and MFA still pending — Security still shows "Coming soon" placeholders.
+  - [x] Email verification — Resend-backed (`services/email.service.ts`), hashed 24h token on `User.emailVerificationToken` (same pattern as refresh tokens). `signup` sends the email (non-blocking), `POST /api/auth/verify-email` confirms it, `POST /api/auth/resend-verification` (60s cooldown, authenticated) resends. Frontend: `routes/verify-email.tsx` (reads `?token=`, shows a success/failure card), Settings' Security tab shows real status + resend button. Verified end-to-end with a real inbox: signup email received, link click flips `emailVerified` to `true` in MongoDB, invalid tokens and cooldown both rejected correctly.
+  - [ ] Password recovery and MFA still pending — Security still shows a "Coming soon" placeholder for MFA.
 - [ ] **Phase 5 — PDF generation from profile** (`@react-pdf/renderer`, no AI yet)
 - [ ] **Phase 6 — Application tracker CRUD + dashboard** (still no AI)
 - [ ] **Phase 7 — LLM fit-scoring** (Claude via LangChain.js, direct prompt, no RAG yet — this is where Phase 2's gating middleware gets wired in)

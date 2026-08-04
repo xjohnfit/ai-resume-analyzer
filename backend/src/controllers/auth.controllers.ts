@@ -8,16 +8,20 @@ import {
     createRefreshToken,
     verifyRefreshToken,
     hashToken,
+    createEmailVerificationToken,
+    EMAIL_VERIFICATION_TOKEN_TTL_MS,
 } from '../services/auth.service';
 import { resetUsageIfNeeded } from '../services/usage.service';
 import { env } from '../config/env';
 import { Profile } from '../models/Profile.model';
 import { cancelSubscriptionImmediately } from '../services/stripe.service';
+import { sendVerificationEmail } from '../services/email.service';
 
 const { NODE_ENV } = env;
 
 const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000; //15 minutes
 const REFRESH_COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000; //30 days
+const RESEND_COOLDOWN_MS = 60 * 1000; // 1 minute
 
 function setAuthCookies(
     res: Response,
@@ -68,7 +72,20 @@ export async function signup(req: Request, res: Response) {
         hashedToken: refresh.hashedToken,
         expiresAt: refresh.expiresAt,
     });
+
+    const verification = createEmailVerificationToken();
+    user.emailVerificationToken = {
+        tokenHash: verification.tokenHash,
+        expiresAt: verification.expiresAt,
+    };
+
     await user.save();
+
+    try {
+        await sendVerificationEmail(user.email, verification.token);
+    } catch (err) {
+        console.error('Failed to send verification email:', err);
+    }
 
     setAuthCookies(res, accessToken, refresh.token);
     res.status(201).json({ id: user.id, email: user.email, name: user.name });
@@ -198,9 +215,71 @@ export async function deleteAccount(req: Request, res: Response) {
     res.json({ success: true });
 }
 
+const verifyEmailSchema = z.object({
+    token: z.string().min(1),
+});
+
+export async function verifyEmail(req: Request, res: Response) {
+    const parsed = verifyEmailSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    const tokenHash = hashToken(parsed.data.token);
+    const user = await User.findOne({
+        'emailVerificationToken.tokenHash': tokenHash,
+        'emailVerificationToken.expiresAt': { $gt: new Date() },
+    });
+
+    if (!user) {
+        return res.status(400).json({ error: 'Invalid or expired verification link' });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    await user.save();
+
+    res.json({ success: true });
+}
+
+export async function resendVerification(req: Request, res: Response) {
+    const user = await User.findById(req.user!.userId);
+    if (!user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (user.emailVerified) {
+        return res.status(400).json({ error: 'Email already verified' });
+    }
+
+    const existingToken = user.emailVerificationToken;
+    if (existingToken) {
+        const sentAt = existingToken.expiresAt.getTime() - EMAIL_VERIFICATION_TOKEN_TTL_MS;
+        if (Date.now() - sentAt < RESEND_COOLDOWN_MS) {
+            return res.status(429).json({ error: 'Please wait a moment before requesting another email' });
+        }
+    }
+
+    const verification = createEmailVerificationToken();
+    user.emailVerificationToken = {
+        tokenHash: verification.tokenHash,
+        expiresAt: verification.expiresAt,
+    };
+    await user.save();
+
+    try {
+        await sendVerificationEmail(user.email, verification.token);
+    } catch (err) {
+        console.error('Failed to send verification email:', err);
+        return res.status(502).json({ error: 'Failed to send email. Please try again.' });
+    }
+
+    res.json({ success: true });
+}
+
 export async function me(req: Request, res: Response) {
     const user = await User.findById(req.user!.userId).select(
-        'email name subscription usage',
+        'email name subscription usage emailVerified',
     );
     if (!user) {
         return res.status(401).json({ error: 'Not authenticated' });
@@ -216,5 +295,6 @@ export async function me(req: Request, res: Response) {
         name: user.name,
         subscription: user.subscription,
         usage: user.usage,
+        emailVerified: user.emailVerified
     });
 }

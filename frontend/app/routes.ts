@@ -12,6 +12,7 @@ export default [
   route("profile/update-photo", "routes/profile.update-photo.ts"),
   route("patterns", "routes/patterns.tsx"),
   route("settings", "routes/settings.tsx"),
+  route("verify-email", "routes/verify-email.tsx"),
   route("contact", "routes/contact.tsx"),
   route("logout", "routes/logout.tsx"),
 ] satisfies RouteConfig;
