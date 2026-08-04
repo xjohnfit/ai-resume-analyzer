@@ -89,6 +89,7 @@ const certificationSchema = new Schema<CertificationEntry>(
 
 export interface ProfileDocument {
     userId: Types.ObjectId;
+    photoUrl?: string;
     contactInfo: ContactInfo;
     summary: string;
     workHistory: WorkHistoryEntry[];
@@ -106,6 +107,7 @@ const profileSchema = new Schema<ProfileDocument>(
             required: true,
             unique: true,
         },
+        photoUrl: { type: String, default: '' },
         contactInfo: { type: contactInfoSchema, default: () => ({}) },
         summary: { type: String, default: '', trim: true },
         workHistory: { type: [workHistorySchema], default: [] },

@@ -93,7 +93,7 @@ export default function Landing() {
                     <Link to="/signup" className="primary-button w-fit">Get started free</Link>
                 </div>
 
-                <div className="w-full max-w-[1200px]">
+                <div className="w-full max-w-300">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {features.map((feature) => (
                             <div key={feature.title} className="gradient-border flex flex-col gap-2 p-6">
@@ -108,7 +108,7 @@ export default function Landing() {
                 <div className="page-heading pt-16">
                     <h1 className="text-4xl!">Simple pricing</h1>
                 </div>
-                <div className="w-full max-w-[700px]">
+                <div className="w-full max-w-175">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {plans.map((plan) => (
                             <div key={plan.name} className="gradient-border flex flex-col items-center gap-3 p-8 text-center">
@@ -123,10 +123,6 @@ export default function Landing() {
                         ))}
                     </div>
                 </div>
-
-                <footer className="pt-16 pb-8 text-dark-200 text-sm">
-                    &copy; {new Date().getFullYear()} Applyze. All rights reserved.
-                </footer>
             </section>
 
             {isModalOpen && (

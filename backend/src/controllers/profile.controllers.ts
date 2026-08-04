@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { Profile } from '../models/Profile.model';
+import { parseResumeText } from '../ai/chains/parseResume.chain';
+import { generatePhotoUploadSignature } from '../services/cloudinary.service';
 
 const contactInfoSchema = z.object({
     fullName: z.string().min(1),
@@ -42,6 +44,7 @@ const certificationSchema = z.object({
 });
 
 const profileUpdateSchema = z.object({
+    photoUrl: z.string().optional().default(""),
     contactInfo: contactInfoSchema,
     summary: z.string().default(""),
     workHistory: z.array(workHistorySchema).default([]),
@@ -50,6 +53,30 @@ const profileUpdateSchema = z.object({
     education: z.array(educationSchema).default([]),
     certifications: z.array(certificationSchema).default([]),
 });
+
+const parseResumeRequestSchema = z.object({
+    rawText: z.string().min(1),
+});
+
+export async function parseResume(req: Request, res: Response) {
+    const parsed = parseResumeRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    try {
+        const result = await parseResumeText(parsed.data.rawText);
+        res.json(result);
+    } catch (err) {
+        console.error('parse-resume failed:', err);
+        res.status(502).json({ error: 'Failed to parse resume. Please try again.' });
+    }
+}
+
+
+export async function getPhotoUploadSignature(req: Request, res: Response) {
+    res.json(generatePhotoUploadSignature());
+}
 
 export async function getProfile(req: Request, res: Response) {
     const profile = await Profile.findOne({ userId: req.user!.userId });

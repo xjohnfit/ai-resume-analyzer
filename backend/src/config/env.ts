@@ -12,6 +12,10 @@ const envSchema = z.object({
     STRIPE_WEBHOOK_SECRET: z.string().min(1),
     STRIPE_PRICE_ID_MONTHLY: z.string().min(1),
     STRIPE_PRICE_ID_YEARLY: z.string().min(1),
+    ANTHROPIC_API_KEY: z.string().min(1),
+    CLOUDINARY_CLOUD_NAME: z.string().min(1),
+    CLOUDINARY_API_KEY: z.string().min(1),
+    CLOUDINARY_API_SECRET: z.string().min(1),
 
 });
 

@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Form, useActionData, useNavigation } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Form, useActionData, useNavigation, useSubmit } from "react-router";
 import {
     IdCard,
     FileText,
@@ -11,6 +11,9 @@ import {
     Plus,
     Trash2,
     Save,
+    Upload,
+    Camera,
+    UserRound,
 } from "lucide-react";
 import type { Route } from "./+types/profile";
 import { apiFetch } from "~/lib/api.server";
@@ -25,6 +28,8 @@ import {
 } from "~/stores/profileFormStore";
 import Navbar from "~/components/Navbar";
 import MobileNavbar from "~/components/MobileNavbar";
+import { extractTextFromPdf } from "~/lib/extractResumeText.client";
+import { useToastStore } from "~/stores/toastStore";
 
 export async function loader({ request }: Route.LoaderArgs) {
     const user = await requireUser(request);
@@ -33,7 +38,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     return { user, profile };
 }
 
-function stripEmptyBullets<T extends { bullets: string[] }>(entries: T[]): T[] {
+function stripEmptyBullets<T extends { bullets: string[]; }>(entries: T[]): T[] {
     return entries.map((entry) => ({ ...entry, bullets: entry.bullets.filter(Boolean) }));
 }
 
@@ -41,6 +46,7 @@ export async function action({ request }: Route.ActionArgs) {
     const formData = await request.formData();
 
     const payload = {
+        photoUrl: String(formData.get("photoUrl") ?? ""),
         contactInfo: {
             fullName: String(formData.get("fullName") ?? ""),
             email: String(formData.get("email") ?? ""),
@@ -79,6 +85,7 @@ export function meta({ }: Route.MetaArgs) {
 
 function mapProfileToDraft(profile: any): ProfileDraft {
     return {
+        photoUrl: profile?.photoUrl ?? "",
         contactInfo: {
             fullName: profile?.contactInfo?.fullName ?? "",
             email: profile?.contactInfo?.email ?? "",
@@ -94,6 +101,24 @@ function mapProfileToDraft(profile: any): ProfileDraft {
         education: profile?.education ?? [],
         certifications: profile?.certifications ?? [],
     };
+}
+
+function buildProfileFormData(draft: ProfileDraft): FormData {
+    const formData = new FormData();
+    formData.set("photoUrl", draft.photoUrl);
+    formData.set("fullName", draft.contactInfo.fullName);
+    formData.set("email", draft.contactInfo.email);
+    formData.set("phone", draft.contactInfo.phone);
+    formData.set("location", draft.contactInfo.location);
+    formData.set("linkedin", draft.contactInfo.linkedin);
+    formData.set("website", draft.contactInfo.website);
+    formData.set("summary", draft.summary);
+    formData.set("skills", draft.skills.join(", "));
+    formData.set("workHistory", JSON.stringify(draft.workHistory));
+    formData.set("projects", JSON.stringify(draft.projects));
+    formData.set("education", JSON.stringify(draft.education));
+    formData.set("certifications", JSON.stringify(draft.certifications));
+    return formData;
 }
 
 function updateAt<T>(array: T[], index: number, patch: Partial<T>): T[] {
@@ -130,9 +155,11 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
     const actionData = useActionData<typeof action>();
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
+    const submit = useSubmit();
 
     const draft = useProfileFormStore((state) => state.draft);
     const setDraft = useProfileFormStore((state) => state.setDraft);
+    const setPhotoUrl = useProfileFormStore((state) => state.setPhotoUrl);
     const updateContactInfo = useProfileFormStore((state) => state.updateContactInfo);
     const updateSummary = useProfileFormStore((state) => state.updateSummary);
     const updateSkills = useProfileFormStore((state) => state.updateSkills);
@@ -140,34 +167,212 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
     const setProjects = useProfileFormStore((state) => state.setProjects);
     const setEducation = useProfileFormStore((state) => state.setEducation);
     const setCertifications = useProfileFormStore((state) => state.setCertifications);
+    const addToast = useToastStore((state) => state.addToast);
+
+    const [isParsing, setIsParsing] = useState(false);
+    const [parseError, setParseError] = useState<string | null>(null);
+    const [parsingProgress, setParsingProgress] = useState(0);
+    const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    async function handleResumeUpload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        setIsParsing(true);
+        setParseError(null);
+        setParsingProgress(0);
+
+        progressIntervalRef.current = setInterval(() => {
+            setParsingProgress((prev) => (prev >= 90 ? prev : prev + (90 - prev) * 0.15));
+        }, 200);
+
+        try {
+            const rawText = await extractTextFromPdf(file);
+            const response = await fetch("/profile/parse-resume", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ rawText }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to parse resume");
+            }
+
+            const data = await response.json();
+            if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+            setParsingProgress(100);
+            setDraft({ ...mapProfileToDraft(data), photoUrl: draft.photoUrl });
+            addToast("Resume imported and populated — check the data before saving.", "success");
+            await new Promise((resolve) => setTimeout(resolve, 400));
+        } catch {
+            setParseError("Couldn't read that resume. Please try again or fill the form manually.");
+        } finally {
+            if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+            setIsParsing(false);
+        }
+    }
+
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [photoError, setPhotoError] = useState<string | null>(null);
+
+    async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        setIsUploadingPhoto(true);
+        setPhotoError(null);
+
+        try {
+            const sigResponse = await fetch("/profile/photo-upload-signature");
+            if (!sigResponse.ok) {
+                throw new Error("Failed to get upload signature");
+            }
+            const { signature, timestamp, apiKey, cloudName, folder } = await sigResponse.json();
+
+            const uploadForm = new FormData();
+            uploadForm.append("file", file);
+            uploadForm.append("api_key", apiKey);
+            uploadForm.append("timestamp", String(timestamp));
+            uploadForm.append("signature", signature);
+            uploadForm.append("folder", folder);
+
+            const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                method: "POST",
+                body: uploadForm,
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error("Upload failed");
+            }
+
+            const data = await uploadResponse.json();
+            setPhotoUrl(data.secure_url);
+            submit(buildProfileFormData({ ...draft, photoUrl: data.secure_url }), { method: "post" });
+        } catch {
+            setPhotoError("Couldn't upload photo. Please try again.");
+        } finally {
+            setIsUploadingPhoto(false);
+        }
+    }
 
     useEffect(() => {
         setDraft(mapProfileToDraft(profile));
     }, [profile, setDraft]);
 
+    useEffect(() => {
+        if (actionData?.success) {
+            addToast("Profile saved.", "success");
+        } else if (actionData?.error) {
+            addToast(actionData.error, "error");
+        }
+    }, [actionData, addToast]);
+
     return (
         <main className="bg-[url('/images/bg-main.svg')] bg-cover">
+            {isParsing && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+                        <h3 className="mb-1 text-base font-semibold text-black">Analyzing your resume...</h3>
+                        <p className="mb-4 text-sm text-dark-200">This usually takes a few seconds.</p>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                            <div
+                                className="h-full rounded-full bg-[#606beb] transition-all duration-300 ease-out"
+                                style={{ width: `${parsingProgress}%` }}
+                            />
+                        </div>
+                        <p className="mt-2 text-right text-xs text-dark-200">{Math.round(parsingProgress)}%</p>
+                    </div>
+                </div>
+            )}
             <Navbar />
             <MobileNavbar />
-            <section className="main-section">
-                <div className="page-heading py-16">
-                    <h1>Your profile</h1>
-                    <h2>Keep this up to date — the more current your profile, the better your tailored resumes and AI feedback will be.</h2>
+            <section className="main-section gap-3 pt-6 pb-4">
+                <div className="flex w-full max-w-300 items-stretch justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="group relative shrink-0">
+                            <label htmlFor="profilePhoto" className="block cursor-pointer">
+                                {draft.photoUrl ? (
+                                    <img
+                                        src={draft.photoUrl}
+                                        alt="Profile photo"
+                                        className="h-36 w-36 rounded-full border border-gray-200 object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-36 w-36 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-dark-200">
+                                        <UserRound className="h-6 w-6" />
+                                    </div>
+                                )}
+                                <span className="absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#606beb] text-white">
+                                    <Camera className="h-3 w-3" />
+                                </span>
+                            </label>
+                            <input
+                                id="profilePhoto"
+                                type="file"
+                                accept="image/*"
+                                disabled={isUploadingPhoto}
+                                onChange={handlePhotoUpload}
+                                className="hidden"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                            <h1 className="text-2xl font-semibold text-black tracking-wide">Your profile</h1>
+                            <p className="max-w-2xl text-sm text-dark-200">
+                                Keep this up to date — the AI uses your current profile data to generate high-match, tailored resumes for each job description, and may reword content to match the role's keywords.
+                            </p>
+                            {isUploadingPhoto && <p className="text-xs text-dark-200">Uploading photo...</p>}
+                            {photoError && <p className="text-xs text-badge-red-text">{photoError}</p>}
+                        </div>
+                    </div>
+
+                    <div className="flex shrink-0 flex-col justify-center">
+                        <button className="primary-button w-fit" type="submit" form="profile-form" disabled={isSubmitting}>
+                            <Save className="h-4 w-4" />
+                            {isSubmitting ? "Saving..." : "Save profile"}
+                        </button>
+                    </div>
                 </div>
 
-                {actionData?.error && (
-                    <p className="rounded-lg bg-badge-red px-4 py-2 text-sm text-badge-red-text">{actionData.error}</p>
-                )}
-                {actionData?.success && (
-                    <p className="rounded-lg bg-badge-green px-4 py-2 text-sm text-badge-green-text">Profile saved.</p>
-                )}
+                <Form method="post" id="profile-form" className="profile-form w-full">
+                    <input type="hidden" name="photoUrl" value={draft.photoUrl} />
 
-                <Form method="post" className="profile-form gradient-border w-full p-6">
-                    <h3 className="flex items-center gap-2 text-xl font-semibold">
-                        <IdCard className="h-5 w-5 text-[#606beb]" />
+                    <div className="profile-category-card lg:col-span-2" style={{ backgroundColor: "#606beb" }}>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-white">
+                                <Upload className="h-4 w-4" />
+                                <p className="text-sm font-medium">
+                                    Have a resume? Import it to populate the fields automatically.
+                                </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                                <label
+                                    htmlFor="resumeUpload"
+                                    className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-medium text-[#606beb] transition-colors hover:bg-white/90"
+                                >
+                                    {isParsing ? "Analyzing resume..." : "Import from resume"}
+                                </label>
+                                <p className="text-[10px] text-white/70">PDF only</p>
+                            </div>
+                            <input
+                                id="resumeUpload"
+                                type="file"
+                                accept="application/pdf"
+                                disabled={isParsing}
+                                onChange={handleResumeUpload}
+                                className="hidden"
+                            />
+                        </div>
+                        {parseError && <p className="text-xs text-white">{parseError}</p>}
+                    </div>
+
+                    <div className="profile-category-card bg-blue-100 lg:col-span-2">
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                        <IdCard className="h-4 w-4 text-[#606beb]" />
                         Contact info
                     </h3>
-                    <div className="profile-form-grid lg:grid-cols-3">
+                    <div className="profile-form-grid lg:grid-cols-6">
                         <div className="form-div">
                             <label htmlFor="fullName">Full name</label>
                             <input
@@ -226,9 +431,11 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                             />
                         </div>
                     </div>
+                    </div>
 
-                    <h3 className="flex items-center gap-2 text-xl font-semibold">
-                        <FileText className="h-5 w-5 text-[#606beb]" />
+                    <div className="profile-category-card bg-violet-100">
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                        <FileText className="h-4 w-4 text-[#606beb]" />
                         Summary
                     </h3>
                     <div className="form-div">
@@ -241,30 +448,36 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                             onChange={(e) => updateSummary(e.target.value)}
                         />
                     </div>
+                    </div>
 
-                    <h3 className="flex items-center gap-2 text-xl font-semibold">
-                        <Sparkles className="h-5 w-5 text-[#606beb]" />
+                    <div className="profile-category-card bg-indigo-100">
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                        <Sparkles className="h-4 w-4 text-[#606beb]" />
                         Skills
                     </h3>
-                    <div className="form-div">
+                    <div className="form-div flex-1">
                         <label htmlFor="skills">Skills (comma-separated)</label>
-                        <input
+                        <textarea
                             id="skills"
                             name="skills"
+                            rows={4}
+                            className="flex-1 resize-none"
                             value={draft.skills.join(", ")}
                             onChange={(e) =>
                                 updateSkills(e.target.value.split(",").map((skill) => skill.trim()))
                             }
                         />
                     </div>
+                    </div>
 
-                    <h3 className="flex items-center gap-2 text-xl font-semibold">
-                        <Briefcase className="h-5 w-5 text-[#606beb]" />
+                    <div className="profile-category-card bg-sky-100 lg:col-span-2">
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                        <Briefcase className="h-4 w-4 text-[#606beb]" />
                         Work history
                     </h3>
                     {draft.workHistory.map((entry, index) => (
-                        <div key={index} className="profile-entry-card gradient-border">
-                            <div className="profile-form-grid">
+                        <div key={index} className="profile-entry-card">
+                            <div className="profile-form-grid lg:grid-cols-4">
                                 <div className="form-div">
                                     <label htmlFor={`workHistory-${index}-company`}>Company</label>
                                     <input
@@ -339,29 +552,31 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                             </div>
                             <button
                                 type="button"
-                                className="secondary-button w-fit"
+                                className="secondary-button w-fit px-3 py-1.5 text-xs"
                                 onClick={() => setWorkHistory(removeAt(draft.workHistory, index))}
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                                 Remove
                             </button>
                         </div>
                     ))}
                     <button
                         type="button"
-                        className="secondary-button w-fit"
+                        className="secondary-button w-fit px-3 py-1.5 text-xs"
                         onClick={() => setWorkHistory([...draft.workHistory, emptyWorkHistoryEntry])}
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5" />
                         Add work history
                     </button>
+                    </div>
 
-                    <h3 className="flex items-center gap-2 text-xl font-semibold">
-                        <FolderKanban className="h-5 w-5 text-[#606beb]" />
+                    <div className="profile-category-card bg-teal-100">
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                        <FolderKanban className="h-4 w-4 text-[#606beb]" />
                         Projects
                     </h3>
                     {draft.projects.map((entry, index) => (
-                        <div key={index} className="profile-entry-card gradient-border">
+                        <div key={index} className="profile-entry-card">
                             <div className="profile-form-grid">
                                 <div className="form-div">
                                     <label htmlFor={`projects-${index}-name`}>Name</label>
@@ -409,30 +624,32 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                             </div>
                             <button
                                 type="button"
-                                className="secondary-button w-fit"
+                                className="secondary-button w-fit px-3 py-1.5 text-xs"
                                 onClick={() => setProjects(removeAt(draft.projects, index))}
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                                 Remove
                             </button>
                         </div>
                     ))}
                     <button
                         type="button"
-                        className="secondary-button w-fit"
+                        className="secondary-button w-fit px-3 py-1.5 text-xs"
                         onClick={() => setProjects([...draft.projects, emptyProjectEntry])}
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5" />
                         Add project
                     </button>
+                    </div>
 
-                    <h3 className="flex items-center gap-2 text-xl font-semibold">
-                        <GraduationCap className="h-5 w-5 text-[#606beb]" />
+                    <div className="profile-category-card bg-purple-100">
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                        <GraduationCap className="h-4 w-4 text-[#606beb]" />
                         Education
                     </h3>
                     {draft.education.map((entry, index) => (
-                        <div key={index} className="profile-entry-card gradient-border">
-                            <div className="profile-form-grid">
+                        <div key={index} className="profile-entry-card">
+                            <div className="profile-form-grid lg:grid-cols-3">
                                 <div className="form-div">
                                     <label htmlFor={`education-${index}-institution`}>Institution</label>
                                     <input
@@ -488,29 +705,31 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                             </div>
                             <button
                                 type="button"
-                                className="secondary-button w-fit"
+                                className="secondary-button w-fit px-3 py-1.5 text-xs"
                                 onClick={() => setEducation(removeAt(draft.education, index))}
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                                 Remove
                             </button>
                         </div>
                     ))}
                     <button
                         type="button"
-                        className="secondary-button w-fit"
+                        className="secondary-button w-fit px-3 py-1.5 text-xs"
                         onClick={() => setEducation([...draft.education, emptyEducationEntry])}
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5" />
                         Add education
                     </button>
+                    </div>
 
-                    <h3 className="flex items-center gap-2 text-xl font-semibold">
-                        <Award className="h-5 w-5 text-[#606beb]" />
+                    <div className="profile-category-card bg-amber-100 lg:col-span-2">
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                        <Award className="h-4 w-4 text-[#606beb]" />
                         Certifications
                     </h3>
                     {draft.certifications.map((entry, index) => (
-                        <div key={index} className="profile-entry-card gradient-border">
+                        <div key={index} className="profile-entry-card">
                             <div className="profile-form-grid lg:grid-cols-3">
                                 <div className="form-div">
                                     <label htmlFor={`certifications-${index}-name`}>Name</label>
@@ -546,32 +765,28 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                             </div>
                             <button
                                 type="button"
-                                className="secondary-button w-fit"
+                                className="secondary-button w-fit px-3 py-1.5 text-xs"
                                 onClick={() => setCertifications(removeAt(draft.certifications, index))}
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                                 Remove
                             </button>
                         </div>
                     ))}
                     <button
                         type="button"
-                        className="secondary-button w-fit"
+                        className="secondary-button w-fit px-3 py-1.5 text-xs"
                         onClick={() => setCertifications([...draft.certifications, emptyCertificationEntry])}
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5" />
                         Add certification
                     </button>
+                    </div>
 
                     <input type="hidden" name="workHistory" value={JSON.stringify(draft.workHistory)} />
                     <input type="hidden" name="projects" value={JSON.stringify(draft.projects)} />
                     <input type="hidden" name="education" value={JSON.stringify(draft.education)} />
                     <input type="hidden" name="certifications" value={JSON.stringify(draft.certifications)} />
-
-                    <button className="primary-button w-fit" type="submit" disabled={isSubmitting}>
-                        <Save className="h-4 w-4" />
-                        {isSubmitting ? "Saving..." : "Save profile"}
-                    </button>
                 </Form>
             </section>
         </main>

@@ -9,7 +9,8 @@ export default [
   route("pricing", "routes/pricing.tsx"),
   route("billing", "routes/billing.tsx"),
   route("profile", "routes/profile.tsx"),
+  route("profile/parse-resume", "routes/profile.parse-resume.ts"),
+  route("profile/photo-upload-signature", "routes/profile.photo-upload-signature.ts"),
   route("patterns", "routes/patterns.tsx"),
   route("logout", "routes/logout.tsx"),
 ] satisfies RouteConfig;
-

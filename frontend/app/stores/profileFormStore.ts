@@ -31,6 +31,7 @@ export interface CertificationEntry {
 }
 
 export interface ProfileDraft {
+    photoUrl: string;
     contactInfo: {
         fullName: string;
         email: string;
@@ -48,6 +49,7 @@ export interface ProfileDraft {
 }
 
 export const emptyProfileDraft: ProfileDraft = {
+    photoUrl: "",
     contactInfo: { fullName: "", email: "", phone: "", location: "", linkedin: "", website: "" },
     summary: "",
     workHistory: [],
@@ -60,6 +62,7 @@ export const emptyProfileDraft: ProfileDraft = {
 interface ProfileFormState {
     draft: ProfileDraft;
     setDraft: (draft: ProfileDraft) => void;
+    setPhotoUrl: (photoUrl: string) => void;
     updateContactInfo: (patch: Partial<ProfileDraft["contactInfo"]>) => void;
     updateSummary: (summary: string) => void;
     updateSkills: (skills: string[]) => void;
@@ -72,6 +75,7 @@ interface ProfileFormState {
 export const useProfileFormStore = create<ProfileFormState>((set) => ({
     draft: emptyProfileDraft,
     setDraft: (draft) => set({ draft }),
+    setPhotoUrl: (photoUrl) => set((state) => ({ draft: { ...state.draft, photoUrl } })),
     updateContactInfo: (patch) =>
         set((state) => ({ draft: { ...state.draft, contactInfo: { ...state.draft.contactInfo, ...patch } } })),
     updateSummary: (summary) => set((state) => ({ draft: { ...state.draft, summary } })),

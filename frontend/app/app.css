@@ -170,28 +170,32 @@
   }
 
   .profile-form {
-    @apply gap-6 max-w-4xl;
+    @apply grid grid-cols-1 items-stretch gap-4 max-w-300 lg:grid-cols-2;
 
     input:not([type="checkbox"]),
     textarea {
-      @apply p-2.5 text-base rounded-xl;
+      @apply p-2 text-sm rounded-lg;
     }
 
     h3 {
-      @apply text-lg mb-1;
+      @apply text-base mb-0.5;
     }
 
     label {
-      @apply text-sm;
+      @apply text-xs;
     }
   }
 
+  .profile-category-card {
+    @apply flex w-full flex-col gap-3 rounded-2xl border border-black/5 p-4;
+  }
+
   .profile-entry-card {
-    @apply flex w-full flex-col gap-2 p-3;
+    @apply flex w-full flex-col gap-1.5 rounded-xl bg-white/80 p-2.5;
   }
 
   .profile-form-grid {
-    @apply grid w-full grid-cols-1 gap-3 sm:grid-cols-2;
+    @apply grid w-full grid-cols-1 gap-2 sm:grid-cols-2;
   }
 
   .patterns-letter {
