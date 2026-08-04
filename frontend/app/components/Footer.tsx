@@ -1,24 +1,30 @@
-import { Link } from "react-router";
-
-const productLinks = [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/profile", label: "Your profile" },
-    { to: "/patterns", label: "Patterns" },
-    { to: "/#pricing", label: "Pricing" },
-];
-
-const accountLinks = [
-    { to: "/login", label: "Log in" },
-    { to: "/signup", label: "Sign up" },
-    { to: "/settings?section=billing", label: "Billing" },
-    { to: "/settings", label: "Settings" },
-];
-
-const supportLinks = [
-    { to: "/contact", label: "Contact" },
-];
+import { Link, useRouteLoaderData } from "react-router";
+import type { loader as rootLoader } from "~/root";
 
 const Footer = () => {
+    const rootData = useRouteLoaderData<typeof rootLoader>("root");
+    const isAuthenticated = Boolean(rootData?.isAuthenticated);
+
+    const productLinks = isAuthenticated
+        ? [
+            { to: "/dashboard", label: "Dashboard" },
+            { to: "/profile", label: "Your profile" },
+            { to: "/patterns", label: "Patterns" },
+        ]
+        : [{ to: "/#pricing", label: "Pricing" }];
+
+    const accountLinks = isAuthenticated
+        ? [
+            { to: "/settings?section=billing", label: "Billing" },
+            { to: "/settings", label: "Settings" },
+        ]
+        : [
+            { to: "/login", label: "Log in" },
+            { to: "/signup", label: "Sign up" },
+        ];
+
+    const supportLinks = isAuthenticated ? [{ to: "/contact", label: "Contact" }] : [];
+
     return (
         <footer className="w-full border-t border-gray-100 bg-white">
             <div className="mx-auto flex w-full max-w-300 flex-col gap-10 px-6 py-12 max-sm:mx-2 sm:flex-row sm:justify-between">
@@ -49,14 +55,16 @@ const Footer = () => {
                             </Link>
                         ))}
                     </div>
-                    <div className="flex flex-col gap-2">
-                        <p className="text-sm font-semibold text-black">Support</p>
-                        {supportLinks.map((link) => (
-                            <Link key={link.to} to={link.to} className="text-sm text-dark-200 hover:text-black">
-                                {link.label}
-                            </Link>
-                        ))}
-                    </div>
+                    {supportLinks.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                            <p className="text-sm font-semibold text-black">Support</p>
+                            {supportLinks.map((link) => (
+                                <Link key={link.to} to={link.to} className="text-sm text-dark-200 hover:text-black">
+                                    {link.label}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

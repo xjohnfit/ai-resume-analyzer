@@ -8,6 +8,7 @@ import { handleStripeWebhook } from './controllers/billing.controllers';
 import authRoutes from './routes/auth.routes';
 import billingRoutes from './routes/billing.routes';
 import profileRoutes from './routes/profile.routes';
+import contactRoutes from './routes/contact.routes';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'OK' });

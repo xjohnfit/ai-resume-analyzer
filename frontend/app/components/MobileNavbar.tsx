@@ -2,13 +2,17 @@ import { useState } from "react";
 import { Form, Link } from "react-router";
 import { Home, User, LogOut, Menu, X, Lightbulb, Settings, Mail } from "lucide-react";
 
-const MobileNavbar = () => {
+interface MobileNavbarProps {
+    isAuthenticated?: boolean;
+}
+
+const MobileNavbar = ({ isAuthenticated = true }: MobileNavbarProps) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
         <div className="relative w-full md:hidden">
             <nav className="navbar mx-4 w-auto">
-                <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                <Link to={isAuthenticated ? "/dashboard" : "/"} onClick={() => setIsOpen(false)}>
                     <p className="text-2xl font-bold text-gradient">APPLYZE</p>
                 </Link>
                 <button
@@ -28,28 +32,41 @@ const MobileNavbar = () => {
                         <Home className="h-4 w-4" />
                         Home
                     </Link>
-                    <Link to="/profile" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
-                        <User className="h-4 w-4" />
-                        Profile
-                    </Link>
-                    <Link to="/patterns" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
-                        <Lightbulb className="h-4 w-4" />
-                        Patterns
-                    </Link>
-                    <Link to="/settings" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
-                        <Settings className="h-4 w-4" />
-                        Settings
-                    </Link>
-                    <Link to="/contact" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
-                        <Mail className="h-4 w-4" />
-                        Contact
-                    </Link>
-                    <Form method="post" action="/logout">
-                        <button type="submit" className="secondary-button logout-button w-full justify-start">
-                            <LogOut className="h-4 w-4" />
-                            Logout
-                        </button>
-                    </Form>
+                    {isAuthenticated ? (
+                        <>
+                            <Link to="/profile" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
+                                <User className="h-4 w-4" />
+                                Profile
+                            </Link>
+                            <Link to="/patterns" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
+                                <Lightbulb className="h-4 w-4" />
+                                Patterns
+                            </Link>
+                            <Link to="/settings" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
+                                <Settings className="h-4 w-4" />
+                                Settings
+                            </Link>
+                            <Link to="/contact" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
+                                <Mail className="h-4 w-4" />
+                                Contact
+                            </Link>
+                            <Form method="post" action="/logout">
+                                <button type="submit" className="secondary-button logout-button w-full justify-start">
+                                    <LogOut className="h-4 w-4" />
+                                    Logout
+                                </button>
+                            </Form>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/login" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
+                                Log in
+                            </Link>
+                            <Link to="/signup" className="primary-button w-fit" onClick={() => setIsOpen(false)}>
+                                Sign up
+                            </Link>
+                        </>
+                    )}
                 </div>
             )}
         </div>

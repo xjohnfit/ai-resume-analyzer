@@ -11,6 +11,12 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import Toaster from "./components/Toaster";
 import Footer from "./components/Footer";
+import { getUser } from "./lib/session.server";
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const user = await getUser(request);
+  return { isAuthenticated: Boolean(user) };
+}
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
