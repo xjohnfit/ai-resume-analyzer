@@ -78,6 +78,25 @@ export async function getPhotoUploadSignature(req: Request, res: Response) {
     res.json(generatePhotoUploadSignature());
 }
 
+const updatePhotoSchema = z.object({
+    photoUrl: z.string().min(1),
+});
+
+export async function updateProfilePhoto(req: Request, res: Response) {
+    const parsed = updatePhotoSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    const profile = await Profile.findOneAndUpdate(
+        { userId: req.user!.userId },
+        { $set: { photoUrl: parsed.data.photoUrl } },
+        { new: true, upsert: true },
+    );
+
+    res.json(profile);
+}
+
 export async function getProfile(req: Request, res: Response) {
     const profile = await Profile.findOne({ userId: req.user!.userId });
     res.json(profile);

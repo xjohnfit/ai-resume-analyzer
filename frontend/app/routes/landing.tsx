@@ -105,7 +105,7 @@ export default function Landing() {
                     </div>
                 </div>
 
-                <div className="page-heading pt-16">
+                <div id="pricing" className="page-heading pt-16">
                     <h1 className="text-4xl!">Simple pricing</h1>
                 </div>
                 <div className="w-full max-w-175">

@@ -4,7 +4,7 @@ const productLinks = [
     { to: "/dashboard", label: "Dashboard" },
     { to: "/profile", label: "Your profile" },
     { to: "/patterns", label: "Patterns" },
-    { to: "/pricing", label: "Pricing" },
+    { to: "/#pricing", label: "Pricing" },
 ];
 
 const accountLinks = [

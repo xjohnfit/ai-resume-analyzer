@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Form, Link, redirect, useFetcher, useSearchParams } from "react-router";
+import { redirect, useFetcher, useSearchParams } from "react-router";
 import {
     User,
     ShieldCheck,
@@ -25,6 +25,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 const ENDPOINT_BY_INTENT: Record<string, string> = {
     portal: "/api/billing/portal",
+    checkout: "/api/billing/checkout",
     cancel: "/api/billing/cancel",
     reactivate: "/api/billing/reactivate",
     "change-plan": "/api/billing/change-plan",
@@ -33,13 +34,38 @@ const ENDPOINT_BY_INTENT: Record<string, string> = {
 export async function action({ request }: Route.ActionArgs) {
     const formData = await request.formData();
     const intent = String(formData.get("intent") ?? "");
+
+    if (intent === "delete-account") {
+        const response = await apiFetch(request, "/api/auth/me", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: String(formData.get("password") ?? "") }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            const message = typeof result.error === "string" ? result.error : "Something went wrong. Please try again.";
+            return { error: message, intent };
+        }
+
+        const headers = new Headers();
+        for (const cookie of response.headers.getSetCookie()) {
+            headers.append("Set-Cookie", cookie);
+        }
+        return redirect("/", { headers });
+    }
+
     const endpoint = ENDPOINT_BY_INTENT[intent];
 
     if (!endpoint) {
         return { error: "Unknown action." };
     }
 
-    const body = intent === "change-plan" ? { plan: String(formData.get("plan") ?? "") } : undefined;
+    const body =
+        intent === "change-plan" || intent === "checkout"
+            ? { plan: String(formData.get("plan") ?? "") }
+            : undefined;
 
     const response = await apiFetch(request, endpoint, {
         method: "POST",
@@ -54,7 +80,7 @@ export async function action({ request }: Route.ActionArgs) {
         return { error: message, intent };
     }
 
-    if (intent === "portal") {
+    if (intent === "portal" || intent === "checkout") {
         return redirect(result.url);
     }
 
@@ -69,7 +95,7 @@ const sections = [
     { key: "account", label: "Account", icon: User, panelBg: "bg-blue-100" },
     { key: "billing", label: "Billing", icon: CreditCard, panelBg: "bg-sky-100" },
     { key: "security", label: "Security", icon: ShieldCheck, panelBg: "bg-violet-100" },
-    { key: "danger", label: "Danger zone", icon: Trash2, panelBg: "bg-amber-100" },
+    { key: "danger", label: "Danger zone", icon: Trash2, panelBg: "bg-red-100" },
 ] as const;
 
 type SectionKey = (typeof sections)[number]["key"];
@@ -86,6 +112,18 @@ const planLabels: Record<string, string> = {
     free: "Free",
     monthly: "Pro — Monthly",
     yearly: "Pro — Yearly",
+};
+
+const statusLabels: Record<string, string> = {
+    active: "Active",
+    trialing: "Trial",
+    past_due: "Past due",
+    canceled: "Canceled",
+    incomplete: "Incomplete",
+    incomplete_expired: "Expired",
+    unpaid: "Unpaid",
+    paused: "Paused",
+    none: "No subscription",
 };
 
 const statusBadgeClasses: Record<string, string> = {
@@ -132,7 +170,10 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
     const otherPlanPrice = otherPlan === "monthly" ? "$9/mo" : "$79/yr";
     const periodEndLabel = formatDate(currentPeriodEnd);
 
-    const [activeModal, setActiveModal] = useState<"cancel" | "change-plan" | null>(null);
+    const [activeModal, setActiveModal] = useState<"upgrade" | "cancel" | "change-plan" | "delete-account" | null>(null);
+    const [deletePassword, setDeletePassword] = useState("");
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
     const fetcher = useFetcher<typeof action>();
     const addToast = useToastStore((state) => state.addToast);
     const isBusy = fetcher.state !== "idle";
@@ -173,11 +214,10 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                     key={section.key}
                                     type="button"
                                     onClick={() => setActiveSection(section.key)}
-                                    className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition-colors ${
-                                        isActive
-                                            ? "bg-[#606beb] text-white"
-                                            : "text-dark-200 hover:bg-white/70 hover:text-black"
-                                    }`}
+                                    className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition-colors ${isActive
+                                        ? "bg-[#606beb] text-white"
+                                        : "text-dark-200 hover:bg-white/70 hover:text-black"
+                                        }`}
                                 >
                                     <Icon className="h-4 w-4" />
                                     {section.label}
@@ -215,7 +255,7 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                     </h2>
                                     <span className={`inline-flex w-fit items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium ${statusBadgeClasses[status] ?? statusBadgeClasses.none}`}>
                                         <span className={`h-1.5 w-1.5 rounded-full ${statusDotClasses[status] ?? statusDotClasses.none}`} />
-                                        {status.replace("_", " ")}
+                                        {statusLabels[status] ?? status.replace("_", " ")}
                                     </span>
                                 </div>
 
@@ -236,9 +276,13 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
 
                                 <div className="flex flex-wrap gap-2">
                                     {!isPaid && (
-                                        <Link to="/pricing" className="primary-button w-fit px-4 py-2 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveModal("upgrade")}
+                                            className="primary-button w-fit px-4 py-2 text-xs"
+                                        >
                                             Upgrade
-                                        </Link>
+                                        </button>
                                     )}
 
                                     {isPaid && !cancelAtPeriodEnd && (
@@ -254,7 +298,7 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                             <button
                                                 type="button"
                                                 onClick={() => setActiveModal("cancel")}
-                                                className="secondary-button w-fit border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-badge-red-text hover:border-blue-300 hover:bg-blue-100"
+                                                className="inline-flex w-fit items-center justify-center gap-2 rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white transition-colors hover:bg-red-700"
                                             >
                                                 <XCircle className="h-3.5 w-3.5" />
                                                 Cancel subscription
@@ -268,7 +312,7 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                             <button
                                                 type="submit"
                                                 disabled={isBusy}
-                                                className="secondary-button w-fit px-3 py-1.5 text-xs"
+                                                className="secondary-button w-fit border-blue-200 bg-blue-50 px-3 py-1.5 text-xs hover:border-blue-300 hover:bg-blue-100"
                                             >
                                                 <RefreshCw className="h-3.5 w-3.5" />
                                                 {isBusy ? "Reactivating..." : "Reactivate subscription"}
@@ -280,12 +324,12 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                 <div className="flex flex-col gap-1 border-t border-black/10 pt-4">
                                     <p className="text-sm font-medium text-black">Payment method &amp; invoices</p>
                                     <p className="text-sm text-dark-200">Update your card or download past invoices via Stripe.</p>
-                                    <Form method="post">
+                                    <fetcher.Form method="post">
                                         <input type="hidden" name="intent" value="portal" />
-                                        <button type="submit" className="secondary-button mt-1 w-fit border-blue-200 bg-blue-50 px-3 py-1.5 text-xs hover:border-blue-300 hover:bg-blue-100">
+                                        <button type="submit" disabled={isBusy} className="secondary-button mt-1 w-fit border-blue-200 bg-blue-50 px-3 py-1.5 text-xs hover:border-blue-300 hover:bg-blue-100">
                                             Manage payment method
                                         </button>
-                                    </Form>
+                                    </fetcher.Form>
                                 </div>
                             </div>
                         )}
@@ -323,21 +367,66 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
 
                         {activeSection === "danger" && (
                             <div className="flex flex-col gap-4">
-                                <div className="flex items-center justify-between gap-2">
-                                    <h2 className="flex items-center gap-2 text-lg font-semibold text-badge-red-text">
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete account
-                                    </h2>
-                                    <ComingSoon />
-                                </div>
+                                <h2 className="flex items-center gap-2 text-lg font-semibold text-badge-red-text">
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete account
+                                </h2>
                                 <p className="text-sm text-dark-200">
-                                    Permanently delete your account and all associated data. This cannot be undone.
+                                    Permanently delete your account and all associated data, including your profile.
+                                    This cannot be undone.
                                 </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveModal("delete-account")}
+                                    className="inline-flex w-fit items-center justify-center gap-2 rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white transition-colors hover:bg-red-700"
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Delete account
+                                </button>
                             </div>
                         )}
+
                     </div>
                 </div>
             </section>
+
+            <Modal
+                open={activeModal === "upgrade"}
+                onClose={() => setActiveModal(null)}
+                title="Choose your plan"
+                maxWidth="max-w-lg"
+            >
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="flex flex-col gap-2 rounded-xl border border-gray-200 p-4 text-center">
+                        <p className="text-sm font-semibold text-black">Monthly</p>
+                        <p className="text-2xl font-semibold text-black">
+                            $9<span className="text-sm font-normal text-dark-200">/mo</span>
+                        </p>
+                        <p className="text-xs text-dark-200">Unlimited AI analyses, billed monthly. Cancel anytime.</p>
+                        <fetcher.Form method="post" className="mt-2">
+                            <input type="hidden" name="intent" value="checkout" />
+                            <input type="hidden" name="plan" value="monthly" />
+                            <button type="submit" disabled={isBusy} className="primary-button w-full px-3 py-1.5 text-xs">
+                                {isBusy ? "Redirecting..." : "Choose Monthly"}
+                            </button>
+                        </fetcher.Form>
+                    </div>
+                    <div className="flex flex-col gap-2 rounded-xl border border-[#606beb] p-4 text-center">
+                        <p className="text-sm font-semibold text-black">Yearly</p>
+                        <p className="text-2xl font-semibold text-black">
+                            $79<span className="text-sm font-normal text-dark-200">/yr</span>
+                        </p>
+                        <p className="text-xs text-dark-200">Unlimited AI analyses, billed yearly. Save ~27% vs. monthly.</p>
+                        <fetcher.Form method="post" className="mt-2">
+                            <input type="hidden" name="intent" value="checkout" />
+                            <input type="hidden" name="plan" value="yearly" />
+                            <button type="submit" disabled={isBusy} className="primary-button w-full px-3 py-1.5 text-xs">
+                                {isBusy ? "Redirecting..." : "Choose Yearly"}
+                            </button>
+                        </fetcher.Form>
+                    </div>
+                </div>
+            </Modal>
 
             <Modal open={activeModal === "cancel"} onClose={() => setActiveModal(null)} title="Cancel subscription">
                 <p className="mb-4 text-sm text-dark-200">
@@ -382,6 +471,63 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                         </button>
                     </fetcher.Form>
                 </div>
+            </Modal>
+
+            <Modal
+                open={activeModal === "delete-account"}
+                onClose={() => {
+                    setActiveModal(null);
+                    setDeletePassword("");
+                    setDeleteConfirmText("");
+                }}
+                title="Delete account"
+            >
+                <p className="mb-4 text-sm text-dark-200">
+                    This permanently deletes your account, profile, and any active subscription. This cannot be undone.
+                </p>
+                <fetcher.Form method="post" className="flex flex-col gap-3">
+                    <input type="hidden" name="intent" value="delete-account" />
+                    <div className="form-div">
+                        <label htmlFor="deletePassword">Password</label>
+                        <input
+                            id="deletePassword"
+                            name="password"
+                            type="password"
+                            value={deletePassword}
+                            onChange={(e) => setDeletePassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="form-div">
+                        <label htmlFor="deleteConfirm">Type DELETE to confirm</label>
+                        <input
+                            id="deleteConfirm"
+                            type="text"
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        />
+                    </div>
+                    <div className="mt-2 flex justify-end gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setActiveModal(null);
+                                setDeletePassword("");
+                                setDeleteConfirmText("");
+                            }}
+                            className="secondary-button w-fit px-3 py-1.5 text-xs"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isBusy || deleteConfirmText !== "DELETE" || !deletePassword}
+                            className="w-fit rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {isBusy ? "Deleting..." : "Delete account"}
+                        </button>
+                    </div>
+                </fetcher.Form>
             </Modal>
         </main>
     );

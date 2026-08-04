@@ -4,6 +4,7 @@ import {
     login,
     refresh,
     logout,
+    deleteAccount,
     me,
 } from '../controllers/auth.controllers';
 import { requireAuth } from '../middleware/requireAuth.middleware';
@@ -15,5 +16,6 @@ router.post('/login', login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/me', requireAuth, me);
+router.delete('/me', requireAuth, deleteAccount);
 
 export default router;

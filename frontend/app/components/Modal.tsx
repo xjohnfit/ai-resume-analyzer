@@ -5,9 +5,10 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    maxWidth?: string;
 }
 
-export default function Modal({ open, onClose, title, children }: ModalProps) {
+export default function Modal({ open, onClose, title, children, maxWidth = "max-w-sm" }: ModalProps) {
     if (!open) return null;
 
     return (
@@ -16,7 +17,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+                className={`w-full ${maxWidth} rounded-2xl bg-white p-6 shadow-xl`}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="mb-4 flex items-center justify-between gap-4">

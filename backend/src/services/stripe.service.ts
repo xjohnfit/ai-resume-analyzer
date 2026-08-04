@@ -22,7 +22,7 @@ export async function createCheckoutSession({
         mode: 'subscription',
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${FRONTEND_URL}/settings?section=billing&checkout=success`,
-        cancel_url: `${FRONTEND_URL}/pricing?checkout=cancel`,
+        cancel_url: `${FRONTEND_URL}/settings?section=billing&checkout=cancel`,
         client_reference_id: userId,
         customer: existingCustomerId,
         customer_email: existingCustomerId ? undefined : customerEmail,
@@ -52,6 +52,10 @@ export async function cancelSubscriptionAtPeriodEnd(subscriptionId: string) {
 
 export async function reactivateSubscription(subscriptionId: string) {
     return stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: false });
+}
+
+export async function cancelSubscriptionImmediately(subscriptionId: string) {
+    return stripe.subscriptions.cancel(subscriptionId);
 }
 
 export async function changeSubscriptionPlan(subscriptionId: string, newPriceId: string) {

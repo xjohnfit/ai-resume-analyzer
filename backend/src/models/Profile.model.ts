@@ -1,8 +1,8 @@
 import { Schema, model, Types } from 'mongoose';
 
 interface ContactInfo {
-    fullName: string;
-    email: string;
+    fullName?: string;
+    email?: string;
     phone?: string;
     location?: string;
     linkedin?: string;
@@ -11,8 +11,8 @@ interface ContactInfo {
 
 const contactInfoSchema = new Schema<ContactInfo>(
     {
-        fullName: { type: String, required: true, trim: true },
-        email: { type: String, required: true, trim: true },
+        fullName: { type: String, trim: true },
+        email: { type: String, trim: true },
         phone: { type: String, trim: true },
         location: { type: String, trim: true },
         linkedin: { type: String, trim: true },

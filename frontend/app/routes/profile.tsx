@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Form, useActionData, useNavigation, useSubmit } from "react-router";
+import { Form, useActionData, useNavigation } from "react-router";
 import {
     IdCard,
     FileText,
@@ -103,24 +103,6 @@ function mapProfileToDraft(profile: any): ProfileDraft {
     };
 }
 
-function buildProfileFormData(draft: ProfileDraft): FormData {
-    const formData = new FormData();
-    formData.set("photoUrl", draft.photoUrl);
-    formData.set("fullName", draft.contactInfo.fullName);
-    formData.set("email", draft.contactInfo.email);
-    formData.set("phone", draft.contactInfo.phone);
-    formData.set("location", draft.contactInfo.location);
-    formData.set("linkedin", draft.contactInfo.linkedin);
-    formData.set("website", draft.contactInfo.website);
-    formData.set("summary", draft.summary);
-    formData.set("skills", draft.skills.join(", "));
-    formData.set("workHistory", JSON.stringify(draft.workHistory));
-    formData.set("projects", JSON.stringify(draft.projects));
-    formData.set("education", JSON.stringify(draft.education));
-    formData.set("certifications", JSON.stringify(draft.certifications));
-    return formData;
-}
-
 function updateAt<T>(array: T[], index: number, patch: Partial<T>): T[] {
     return array.map((item, i) => (i === index ? { ...item, ...patch } : item));
 }
@@ -155,7 +137,6 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
     const actionData = useActionData<typeof action>();
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
-    const submit = useSubmit();
 
     const draft = useProfileFormStore((state) => state.draft);
     const setDraft = useProfileFormStore((state) => state.setDraft);
@@ -248,8 +229,19 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
             }
 
             const data = await uploadResponse.json();
+
+            const saveResponse = await fetch("/profile/update-photo", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ photoUrl: data.secure_url }),
+            });
+
+            if (!saveResponse.ok) {
+                throw new Error("Failed to save photo");
+            }
+
             setPhotoUrl(data.secure_url);
-            submit(buildProfileFormData({ ...draft, photoUrl: data.secure_url }), { method: "post" });
+            addToast("Profile photo updated.", "success");
         } catch {
             setPhotoError("Couldn't upload photo. Please try again.");
         } finally {

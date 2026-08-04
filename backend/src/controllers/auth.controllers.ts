@@ -11,6 +11,8 @@ import {
 } from '../services/auth.service';
 import { resetUsageIfNeeded } from '../services/usage.service';
 import { env } from '../config/env';
+import { Profile } from '../models/Profile.model';
+import { cancelSubscriptionImmediately } from '../services/stripe.service';
 
 const { NODE_ENV } = env;
 
@@ -160,8 +162,46 @@ export async function logout(req: Request, res: Response) {
     res.json({ success: true });
 }
 
+const deleteAccountSchema = z.object({
+    password: z.string().min(1),
+});
+
+export async function deleteAccount(req: Request, res: Response) {
+    const parsed = deleteAccountSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    const user = await User.findById(req.user!.userId);
+    if (
+        !user ||
+        !(await comparePassword(parsed.data.password, user.passwordHash))
+    ) {
+        return res.status(401).json({ error: 'Incorrect password' });
+    }
+
+    if (
+        user.subscription.stripeSubscriptionId &&
+        (user.subscription.status === 'active' ||
+            user.subscription.status === 'trialing')
+    ) {
+        await cancelSubscriptionImmediately(
+            user.subscription.stripeSubscriptionId,
+        );
+    }
+
+    await Profile.deleteOne({ userId: user.id });
+    await User.findByIdAndDelete(user.id);
+
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    res.json({ success: true });
+}
+
 export async function me(req: Request, res: Response) {
-    const user = await User.findById(req.user!.userId).select('email name subscription usage');
+    const user = await User.findById(req.user!.userId).select(
+        'email name subscription usage',
+    );
     if (!user) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -178,4 +218,3 @@ export async function me(req: Request, res: Response) {
         usage: user.usage,
     });
 }
-
