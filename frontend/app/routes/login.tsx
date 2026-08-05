@@ -4,6 +4,32 @@ import { apiFetch } from "~/lib/api.server";
 
 export async function action({ request }: Route.ActionArgs) {
     const formData = await request.formData();
+    const challengeToken = formData.get("challengeToken");
+
+    if (challengeToken) {
+        const code = String(formData.get("code") ?? "");
+
+        const response = await apiFetch(request, "/api/auth/mfa/verify-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ challengeToken: String(challengeToken), code }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            const message = typeof result.error === "string" ? result.error : "Please check your code and try again.";
+            return { error: message, challengeToken: String(challengeToken) };
+        }
+
+        const headers = new Headers();
+        for (const cookie of response.headers.getSetCookie()) {
+            headers.append("Set-Cookie", cookie);
+        }
+
+        return redirect("/dashboard", { headers });
+    }
+
     const body = {
         email: String(formData.get("email") ?? ""),
         password: String(formData.get("password") ?? ""),
@@ -22,6 +48,10 @@ export async function action({ request }: Route.ActionArgs) {
         return { error: message };
     }
 
+    if (result.mfaRequired) {
+        return { mfaRequired: true, challengeToken: result.challengeToken as string };
+    }
+
     const headers = new Headers();
     for (const cookie of response.headers.getSetCookie()) {
         headers.append("Set-Cookie", cookie);
@@ -34,6 +64,36 @@ export default function Login() {
     const actionData = useActionData<typeof action>();
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
+    const challengeToken = actionData && "challengeToken" in actionData ? actionData.challengeToken : undefined;
+
+    if (challengeToken) {
+        return (
+            <div className="auth-card">
+                <div className="flex flex-col gap-2 text-center">
+                    <Link to="/">
+                        <p className="text-2xl font-bold text-gradient">APPLYZE</p>
+                    </Link>
+                    <h1 className="text-2xl font-semibold">Enter your code</h1>
+                    <p className="text-dark-200">We texted a 6-digit code to your phone.</p>
+                </div>
+
+                {actionData?.error && (
+                    <p className="rounded-lg bg-badge-red px-4 py-2 text-sm text-badge-red-text">{actionData.error}</p>
+                )}
+
+                <Form method="post" className="flex flex-col gap-4">
+                    <input type="hidden" name="challengeToken" value={challengeToken} />
+                    <div className="form-div">
+                        <label htmlFor="code">Code</label>
+                        <input id="code" name="code" type="text" inputMode="numeric" autoFocus required />
+                    </div>
+                    <button className="auth-button" type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Verifying..." : "Verify & log in"}
+                    </button>
+                </Form>
+            </div>
+        );
+    }
 
     return (
         <div className="auth-card">
@@ -77,5 +137,4 @@ export default function Login() {
             </p>
         </div>
     );
-
 }

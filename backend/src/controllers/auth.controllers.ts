@@ -11,12 +11,15 @@ import {
     createEmailVerificationToken,
     EMAIL_VERIFICATION_TOKEN_TTL_MS,
     createPasswordResetToken,
+    signMfaChallengeToken,
+    verifyMfaChallengeToken,
 } from '../services/auth.service';
 import { resetUsageIfNeeded } from '../services/usage.service';
 import { env } from '../config/env';
 import { Profile } from '../models/Profile.model';
 import { cancelSubscriptionImmediately } from '../services/stripe.service';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
+import { sendVerificationCode, checkVerificationCode } from '../services/mfa.service';
 
 const { NODE_ENV } = env;
 
@@ -108,6 +111,18 @@ export async function login(req: Request, res: Response) {
     const user = await User.findOne({ email });
     if (!user || !(await comparePassword(password, user.passwordHash))) {
         return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    if (user.mfa.enabled && user.mfa.phoneNumber) {
+        try {
+            await sendVerificationCode(user.mfa.phoneNumber);
+        } catch (err) {
+            console.error('Failed to send MFA login code:', err);
+            return res.status(502).json({ error: 'Failed to send verification code. Please try again.' });
+        }
+
+        const challengeToken = signMfaChallengeToken(user.id);
+        return res.json({ mfaRequired: true, challengeToken });
     }
 
     const accessToken = signAccessToken(user.id);
@@ -339,9 +354,137 @@ export async function resetPassword(req: Request, res: Response) {
     res.json({ success: true });
 }
 
+const startPhoneVerificationSchema = z.object({
+    phoneNumber: z.string().min(1),
+});
+
+export async function startPhoneVerification(req: Request, res: Response) {
+    const parsed = startPhoneVerificationSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    const user = await User.findById(req.user!.userId);
+    if (!user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (user.mfa.enabled) {
+        return res.status(400).json({ error: 'Disable MFA before changing your phone number' });
+    }
+
+    try {
+        await sendVerificationCode(parsed.data.phoneNumber);
+    } catch (err) {
+        console.error('Failed to send MFA verification code:', err);
+        return res.status(502).json({ error: 'Failed to send verification code. Please try again.' });
+    }
+
+    user.mfa.phoneNumber = parsed.data.phoneNumber;
+    user.mfa.phoneVerified = false;
+    await user.save();
+
+    res.json({ success: true });
+}
+
+const confirmPhoneVerificationSchema = z.object({
+    code: z.string().min(1),
+});
+
+export async function confirmPhoneVerification(req: Request, res: Response) {
+    const parsed = confirmPhoneVerificationSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    const user = await User.findById(req.user!.userId);
+    if (!user || !user.mfa.phoneNumber) {
+        return res.status(400).json({ error: 'No pending phone number to verify' });
+    }
+
+    const approved = await checkVerificationCode(user.mfa.phoneNumber, parsed.data.code);
+    if (!approved) {
+        return res.status(400).json({ error: 'Incorrect or expired code' });
+    }
+
+    user.mfa.phoneVerified = true;
+    await user.save();
+
+    res.json({ success: true });
+}
+
+export async function enableMfa(req: Request, res: Response) {
+    const user = await User.findById(req.user!.userId);
+    if (!user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!user.mfa.phoneVerified) {
+        return res.status(400).json({ error: 'Verify your phone number before enabling MFA' });
+    }
+
+    user.mfa.enabled = true;
+    await user.save();
+
+    res.json({ success: true });
+}
+
+export async function disableMfa(req: Request, res: Response) {
+    const user = await User.findById(req.user!.userId);
+    if (!user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    user.mfa.enabled = false;
+    await user.save();
+
+    res.json({ success: true });
+}
+
+const verifyMfaLoginSchema = z.object({
+    challengeToken: z.string().min(1),
+    code: z.string().min(1),
+});
+
+export async function verifyMfaLogin(req: Request, res: Response) {
+    const parsed = verifyMfaLoginSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    let payload;
+    try {
+        payload = verifyMfaChallengeToken(parsed.data.challengeToken);
+    } catch {
+        return res.status(401).json({ error: 'Challenge expired. Please log in again.' });
+    }
+
+    const user = await User.findById(payload.userId);
+    if (!user || !user.mfa.enabled || !user.mfa.phoneNumber) {
+        return res.status(401).json({ error: 'Challenge expired. Please log in again.' });
+    }
+
+    const approved = await checkVerificationCode(user.mfa.phoneNumber, parsed.data.code);
+    if (!approved) {
+        return res.status(400).json({ error: 'Incorrect or expired code' });
+    }
+
+    const accessToken = signAccessToken(user.id);
+    const refresh = createRefreshToken(user.id);
+    user.refreshTokens.push({
+        jti: refresh.jti,
+        hashedToken: refresh.hashedToken,
+        expiresAt: refresh.expiresAt,
+    });
+    await user.save();
+
+    setAuthCookies(res, accessToken, refresh.token);
+    res.json({ id: user.id, email: user.email, name: user.name });
+}
+
 export async function me(req: Request, res: Response) {
     const user = await User.findById(req.user!.userId).select(
-        'email name subscription usage emailVerified',
+        'email name subscription usage emailVerified mfa',
     );
     if (!user) {
         return res.status(401).json({ error: 'Not authenticated' });
@@ -357,6 +500,7 @@ export async function me(req: Request, res: Response) {
         name: user.name,
         subscription: user.subscription,
         usage: user.usage,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
+        mfa: user.mfa,
     });
 }

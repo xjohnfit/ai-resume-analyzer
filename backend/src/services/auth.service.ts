@@ -10,6 +10,7 @@ const ACCESS_TOKEN_TTL = "15m";
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export const EMAIL_VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const MFA_CHALLENGE_TOKEN_TTL = "5m";
 
 export async function hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, SALT_ROUNDS);
@@ -31,6 +32,23 @@ export function signAccessToken(userId: string): string {
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
     return jwt.verify(token, JWT_ACCESS_SECRET) as AccessTokenPayload;
+}
+
+interface MfaChallengeTokenPayload {
+    userId: string;
+    purpose: "mfa_challenge";
+}
+
+export function signMfaChallengeToken(userId: string): string {
+    return jwt.sign(
+        { userId, purpose: "mfa_challenge" } satisfies MfaChallengeTokenPayload,
+        env.JWT_REFRESH_SECRET,
+        { expiresIn: MFA_CHALLENGE_TOKEN_TTL },
+    );
+}
+
+export function verifyMfaChallengeToken(token: string): MfaChallengeTokenPayload {
+    return jwt.verify(token, env.JWT_REFRESH_SECRET) as MfaChallengeTokenPayload;
 }
 
 interface RefreshTokenPayload {

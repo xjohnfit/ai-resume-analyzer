@@ -9,6 +9,7 @@ import {
     RefreshCw,
     ArrowRightLeft,
     XCircle,
+    ChevronDown,
 } from "lucide-react";
 import type { Route } from "./+types/settings";
 import Navbar from "~/components/Navbar";
@@ -30,6 +31,10 @@ const ENDPOINT_BY_INTENT: Record<string, string> = {
     reactivate: "/api/billing/reactivate",
     "change-plan": "/api/billing/change-plan",
     "resend-verification": "/api/auth/resend-verification",
+    "mfa-phone-start": "/api/auth/mfa/phone/start",
+    "mfa-phone-confirm": "/api/auth/mfa/phone/confirm",
+    "mfa-enable": "/api/auth/mfa/enable",
+    "mfa-disable": "/api/auth/mfa/disable",
 };
 
 export async function action({ request }: Route.ActionArgs) {
@@ -66,7 +71,12 @@ export async function action({ request }: Route.ActionArgs) {
     const body =
         intent === "change-plan" || intent === "checkout"
             ? { plan: String(formData.get("plan") ?? "") }
-            : undefined;
+            : intent === "mfa-phone-start"
+                ? { phoneNumber: String(formData.get("phoneNumber") ?? "") }
+                : intent === "mfa-phone-confirm"
+                    ? { code: String(formData.get("code") ?? "") }
+                    : undefined;
+
 
     const response = await apiFetch(request, endpoint, {
         method: "POST",
@@ -100,14 +110,6 @@ const sections = [
 ] as const;
 
 type SectionKey = (typeof sections)[number]["key"];
-
-function ComingSoon() {
-    return (
-        <span className="w-fit rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
-            Coming soon
-        </span>
-    );
-}
 
 const planLabels: Record<string, string> = {
     free: "Free",
@@ -156,6 +158,26 @@ function formatDate(value?: string) {
     return new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
+function maskPhone(phone?: string) {
+    if (!phone) return "";
+    return `••••${phone.slice(-4)}`;
+}
+
+const countryCodes = [
+    { flag: "🇺🇸", code: "+1", label: "United States" },
+    { flag: "🇨🇦", code: "+1", label: "Canada" },
+    { flag: "🇬🇧", code: "+44", label: "United Kingdom" },
+    { flag: "🇦🇺", code: "+61", label: "Australia" },
+    { flag: "🇩🇪", code: "+49", label: "Germany" },
+    { flag: "🇫🇷", code: "+33", label: "France" },
+    { flag: "🇪🇸", code: "+34", label: "Spain" },
+    { flag: "🇮🇹", code: "+39", label: "Italy" },
+    { flag: "🇧🇷", code: "+55", label: "Brazil" },
+    { flag: "🇲🇽", code: "+52", label: "Mexico" },
+    { flag: "🇮🇳", code: "+91", label: "India" },
+    { flag: "🇯🇵", code: "+81", label: "Japan" },
+];
+
 export default function Settings({ loaderData }: Route.ComponentProps) {
     const { user } = loaderData;
     const [searchParams] = useSearchParams();
@@ -175,6 +197,11 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
     const [deletePassword, setDeletePassword] = useState("");
     const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
+    const [phoneCountryCode, setPhoneCountryCode] = useState("+1");
+    const [phoneLocalNumber, setPhoneLocalNumber] = useState("");
+    const [retryCountryCode, setRetryCountryCode] = useState("+1");
+    const [retryLocalNumber, setRetryLocalNumber] = useState("");
+
     const fetcher = useFetcher<typeof action>();
     const addToast = useToastStore((state) => state.addToast);
     const isBusy = fetcher.state !== "idle";
@@ -188,6 +215,10 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                 reactivate: "Your subscription has been reactivated.",
                 "change-plan": "Your plan has been updated.",
                 "resend-verification": "Verification email sent — check your inbox.",
+                "mfa-phone-start": "Verification code sent.",
+                "mfa-phone-confirm": "Phone number verified.",
+                "mfa-enable": "Two-factor authentication enabled.",
+                "mfa-disable": "Two-factor authentication disabled.",
             };
             addToast(messages[fetcher.data.intent as string] ?? "Done.", "success");
             setActiveModal(null);
@@ -378,15 +409,148 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                     )}
                                 </div>
 
-                                <div className="flex flex-col gap-1">
+                                <div className="flex flex-col gap-2">
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="flex items-center gap-2 text-sm font-medium text-black">
                                             <KeyRound className="h-4 w-4 text-[#606beb]" />
                                             Two-factor authentication
                                         </p>
-                                        <ComingSoon />
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs font-medium ${user.mfa.enabled ? "text-green-700" : "text-gray-500"}`}>
+                                                {user.mfa.enabled ? "Enabled" : "Disabled"}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={user.mfa.enabled}
+                                                aria-label="Toggle two-factor authentication"
+                                                disabled={isBusy || !user.mfa.phoneVerified}
+                                                onClick={() =>
+                                                    fetcher.submit(
+                                                        { intent: user.mfa.enabled ? "mfa-disable" : "mfa-enable" },
+                                                        { method: "post" },
+                                                    )
+                                                }
+                                                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${user.mfa.enabled ? "bg-green-500" : "bg-gray-300"
+                                                    }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${user.mfa.enabled ? "translate-x-6" : "translate-x-1"
+                                                        }`}
+                                                />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-dark-200">Add a phone number to require a code at login.</p>
+
+                                    {user.mfa.enabled ? (
+                                        <p className="text-sm text-dark-200">
+                                            A code is sent to {maskPhone(user.mfa.phoneNumber)} each time you log in.
+                                        </p>
+                                    ) : user.mfa.phoneVerified ? (
+                                        <p className="text-sm text-dark-200">
+                                            {maskPhone(user.mfa.phoneNumber)} is verified. Turn on two-factor authentication to require a code at every login.
+                                        </p>
+                                    ) : user.mfa.phoneNumber ? (
+                                        <>
+                                            <p className="text-sm text-dark-200">
+                                                We sent a code to {maskPhone(user.mfa.phoneNumber)}. Enter it below to confirm this number.
+                                            </p>
+                                            <fetcher.Form method="post" className="flex flex-row flex-nowrap items-center gap-2">
+                                                <input
+                                                    id="mfaCode"
+                                                    name="code"
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    aria-label="Code"
+                                                    required
+                                                    className="w-20 shrink-0 p-2 text-center text-sm tracking-wider"
+                                                />
+                                                <input type="hidden" name="intent" value="mfa-phone-confirm" />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isBusy}
+                                                    className="secondary-button mt-1 w-fit border-blue-200 bg-blue-50 px-3 py-1.5 text-xs hover:border-blue-300 hover:bg-blue-100"
+                                                >
+                                                    {isBusy ? "Verifying..." : "Verify code"}
+                                                </button>
+                                            </fetcher.Form>
+                                            <p className="text-xs text-dark-200">Wrong number?</p>
+                                            <fetcher.Form method="post" className="flex flex-row flex-nowrap items-center gap-2">
+                                                <div className="relative shrink-0">
+                                                    <select
+                                                        value={retryCountryCode}
+                                                        onChange={(e) => setRetryCountryCode(e.target.value)}
+                                                        aria-label="Country code"
+                                                        className="inset-shadow w-fit appearance-none rounded-2xl bg-white py-2 pr-6 pl-2 text-sm focus:outline-none"
+                                                    >
+                                                        {countryCodes.map((c) => (
+                                                            <option key={`${c.label}-${c.code}`} value={c.code}>
+                                                                {c.flag} {c.code}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown className="pointer-events-none absolute top-1/2 right-1.5 h-3.5 w-3.5 -translate-y-1/2 text-dark-200" />
+                                                </div>
+                                                <input
+                                                    value={retryLocalNumber}
+                                                    onChange={(e) => setRetryLocalNumber(e.target.value)}
+                                                    type="tel"
+                                                    placeholder="5551234567"
+                                                    aria-label="New phone number"
+                                                    required
+                                                    className="ml-1 w-32 shrink-0 p-2 text-sm tracking-wider"
+                                                />
+                                                <input type="hidden" name="phoneNumber" value={`${retryCountryCode}${retryLocalNumber.replace(/\D/g, "")}`} />
+                                                <input type="hidden" name="intent" value="mfa-phone-start" />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isBusy}
+                                                    className="secondary-button mt-1 w-fit border-blue-200 bg-blue-50 px-3 py-1.5 text-xs hover:border-blue-300 hover:bg-blue-100"
+                                                >
+                                                    {isBusy ? "Sending..." : "Send to new number"}
+                                                </button>
+                                            </fetcher.Form>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm text-dark-200">Add a phone number to require a code at login.</p>
+                                            <fetcher.Form method="post" className="flex flex-row flex-nowrap items-center gap-2">
+                                                <div className="relative shrink-0">
+                                                    <select
+                                                        value={phoneCountryCode}
+                                                        onChange={(e) => setPhoneCountryCode(e.target.value)}
+                                                        aria-label="Country code"
+                                                        className="inset-shadow w-fit appearance-none rounded-2xl bg-white py-2 pr-6 pl-2 text-sm focus:outline-none"
+                                                    >
+                                                        {countryCodes.map((c) => (
+                                                            <option key={`${c.label}-${c.code}`} value={c.code}>
+                                                                {c.flag} {c.code}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown className="pointer-events-none absolute top-1/2 right-1.5 h-3.5 w-3.5 -translate-y-1/2 text-dark-200" />
+                                                </div>
+                                                <input
+                                                    value={phoneLocalNumber}
+                                                    onChange={(e) => setPhoneLocalNumber(e.target.value)}
+                                                    type="tel"
+                                                    placeholder="5551234567"
+                                                    aria-label="Phone number"
+                                                    required
+                                                    className="ml-1 w-32 shrink-0 p-2 text-sm tracking-wider"
+                                                />
+                                                <input type="hidden" name="phoneNumber" value={`${phoneCountryCode}${phoneLocalNumber.replace(/\D/g, "")}`} />
+                                                <input type="hidden" name="intent" value="mfa-phone-start" />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isBusy}
+                                                    className="secondary-button mt-1 w-fit border-blue-200 bg-blue-50 px-3 py-1.5 text-xs whitespace-nowrap hover:border-blue-300 hover:bg-blue-100"
+                                                >
+                                                    {isBusy ? "Sending..." : "Send code"}
+                                                </button>
+                                            </fetcher.Form>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}

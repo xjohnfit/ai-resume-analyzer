@@ -106,6 +106,22 @@ const passwordResetTokenSchema = new Schema<PasswordResetToken>(
     { _id: false },
 );
 
+interface Mfa {
+    phoneNumber?: string;
+    phoneVerified: boolean;
+    enabled: boolean;
+}
+
+const mfaSchema = new Schema<Mfa>(
+    {
+        phoneNumber: { type: String },
+        phoneVerified: { type: Boolean, default: false },
+        enabled: { type: Boolean, default: false },
+    },
+    { _id: false },
+);
+
+
 export interface UserDocument {
     name: string;
     email: string;
@@ -116,6 +132,7 @@ export interface UserDocument {
     emailVerified: boolean;
     emailVerificationToken?: EmailVerificationToken;
     passwordResetToken?: PasswordResetToken;
+    mfa: Mfa;
 }
 
 const userSchema = new Schema<UserDocument>(
@@ -132,6 +149,7 @@ const userSchema = new Schema<UserDocument>(
         refreshTokens: { type: [refreshTokenSchema], default: [] },
         subscription: { type: subscriptionSchema, default: () => ({}) },
         usage: { type: usageSchema, default: () => ({}) },
+        mfa: { type: mfaSchema, default: () => ({}) },
         emailVerified: { type: Boolean, default: false },
         emailVerificationToken: { type: emailVerificationTokenSchema },
         passwordResetToken: { type: passwordResetTokenSchema },

@@ -21,6 +21,9 @@ const envSchema = z.object({
     RESEND_API_KEY: z.string().min(1),
     RESEND_FROM_EMAIL: z.string().min(1),
     CONTACT_RECEIVER_EMAIL: z.string().min(1),
+    TWILIO_ACCOUNT_SID: z.string().min(1),
+    TWILIO_AUTH_TOKEN: z.string().min(1),
+    TWILIO_VERIFY_SERVICE_SID: z.string().min(1),
 });
 
 export const env = envSchema.parse(process.env);
