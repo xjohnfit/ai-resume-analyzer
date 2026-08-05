@@ -22,9 +22,9 @@ const Navbar = ({ isAuthenticated = true }: NavbarProps) => {
                             <User className="h-4 w-4" />
                             Profile
                         </Link>
-                        <Link to="/patterns" className="secondary-button">
+                        <Link to="/insights" className="secondary-button">
                             <Lightbulb className="h-4 w-4" />
-                            Patterns
+                            Insights
                         </Link>
                         <Link to="/settings" className="secondary-button">
                             <Settings className="h-4 w-4" />

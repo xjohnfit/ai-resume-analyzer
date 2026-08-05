@@ -10,7 +10,7 @@ export default [
   route("profile/parse-resume", "routes/profile.parse-resume.ts"),
   route("profile/photo-upload-signature", "routes/profile.photo-upload-signature.ts"),
   route("profile/update-photo", "routes/profile.update-photo.ts"),
-  route("patterns", "routes/patterns.tsx"),
+  route("insights", "routes/insights.tsx"),
   route("settings", "routes/settings.tsx"),
   route("verify-email", "routes/verify-email.tsx"),
   route("forgot-password", "routes/forgot-password.tsx"),

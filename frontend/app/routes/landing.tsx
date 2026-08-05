@@ -125,20 +125,20 @@ export default function Landing() {
 
     return (
         <main className="bg-[url('/images/bg-main.svg')] bg-cover">
-            <nav className="navbar">
+            <nav className="navbar max-sm:mx-4 max-sm:w-auto max-sm:px-4 pr-5">
                 <Link to="/">
-                    <p className="text-2xl font-bold text-gradient">APPLYZE</p>
+                    <p className="text-2xl font-bold text-gradient max-sm:text-lg">APPLYZE</p>
                 </Link>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 max-sm:gap-1.5">
                     <a href="#pricing" className="secondary-button hidden sm:inline-flex">Pricing</a>
-                    <Link to="/login" className="secondary-button">Log in</Link>
-                    <Link to="/signup" className="primary-button w-fit">Get started free</Link>
+                    <Link to="/login" className="secondary-button max-sm:px-3 max-sm:py-1.5 max-sm:text-xs">Log in</Link>
+                    <Link to="/signup" className="primary-button w-fit max-sm:px-3 max-sm:py-1.5 max-sm:text-xs">Get started free</Link>
                 </div>
             </nav>
 
             <section className="main-section">
                 <div className="page-heading py-16">
-                    <h1>Land your next job with <br />AI-grounded resume feedback</h1>
+                    <h1 className="max-sm:text-4xl">Land your next job with <br className="hidden sm:inline" />AI-grounded resume feedback</h1>
                     <h2>
                         Maintain one master profile, generate a tailored resume for every application, and get an
                         AI-powered fit &amp; ATS report grounded in your real experience — not invented qualifications.
@@ -176,9 +176,11 @@ export default function Landing() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {features.map((feature) => (
-                            <div key={feature.title} className="gradient-border flex flex-col gap-2 p-6">
-                                <feature.icon className="h-6 w-6 text-[#606beb]" />
-                                <h3 className="text-xl font-semibold">{feature.title}</h3>
+                            <div key={feature.title} className="gradient-border flex flex-col gap-2 p-6 max-sm:bg-none max-sm:bg-white/70">
+                                <div className="flex items-center gap-2">
+                                    <feature.icon className="h-6 w-6 shrink-0 text-[#606beb]" />
+                                    <h3 className="text-xl font-semibold">{feature.title}</h3>
+                                </div>
                                 <p className="text-dark-200">{feature.description}</p>
                             </div>
                         ))}
@@ -223,23 +225,25 @@ export default function Landing() {
                 </div>
 
                 <div className="grid w-full max-w-300 grid-cols-1 gap-10 pt-16 lg:grid-cols-2">
-                    <div className="flex flex-col gap-6">
-                        <div className="flex flex-col gap-3">
-                            <MessageCircle className="h-8 w-8 text-[#606beb]" />
-                            <h3 className="text-2xl font-semibold">Still have questions?</h3>
+                    <div className="flex flex-col gap-6 max-sm:items-center max-sm:text-center">
+                        <div className="flex flex-col gap-3 max-sm:items-center">
+                            <div className="flex items-center gap-2">
+                                <MessageCircle className="h-8 w-8 shrink-0 text-[#606beb]" />
+                                <h3 className="text-2xl font-semibold">Still have questions?</h3>
+                            </div>
                             <p className="text-dark-200">
                                 Whether it's about pricing, a bug you've run into, or just how Applyze works — send us a
                                 message and we'll get back to you.
                             </p>
                         </div>
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-4 max-sm:items-center">
                             {contactTopics.map((topic) => (
-                                <div key={topic.title} className="flex items-start gap-3">
-                                    <topic.icon className="mt-0.5 h-5 w-5 shrink-0 text-[#606beb]" />
-                                    <div>
+                                <div key={topic.title} className="flex flex-col gap-1 max-sm:max-w-xs max-sm:items-center">
+                                    <div className="flex items-center gap-2">
+                                        <topic.icon className="h-5 w-5 shrink-0 text-[#606beb]" />
                                         <p className="font-semibold">{topic.title}</p>
-                                        <p className="text-sm text-dark-200">{topic.description}</p>
                                     </div>
+                                    <p className="text-sm text-dark-200">{topic.description}</p>
                                 </div>
                             ))}
                         </div>
@@ -253,7 +257,7 @@ export default function Landing() {
                             </p>
                         </div>
                     </div>
-                    <div className="gradient-border h-fit p-8">
+                    <div className="h-fit">
                         <ContactForm idPrefix="landing-" />
                     </div>
                 </div>

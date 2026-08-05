@@ -9,7 +9,7 @@ const Footer = () => {
         ? [
             { to: "/dashboard", label: "Dashboard" },
             { to: "/profile", label: "Your profile" },
-            { to: "/patterns", label: "Patterns" },
+            { to: "/insights", label: "Insights" },
         ]
         : [{ to: "/#pricing", label: "Pricing" }];
 
@@ -27,8 +27,8 @@ const Footer = () => {
 
     return (
         <footer className="w-full border-t border-gray-100 bg-white">
-            <div className="mx-auto flex w-full max-w-300 flex-col gap-10 px-6 py-12 max-sm:mx-2 sm:flex-row sm:justify-between">
-                <div className="flex max-w-xs flex-col gap-2">
+            <div className="mx-auto flex w-full max-w-300 flex-col gap-10 px-6 py-12 max-sm:mx-2 max-sm:items-center max-sm:text-center sm:flex-row sm:justify-between">
+                <div className="flex max-w-xs flex-col gap-2 max-sm:items-center">
                     <Link to="/">
                         <p className="text-2xl font-bold text-gradient">APPLYZE</p>
                     </Link>
@@ -38,8 +38,8 @@ const Footer = () => {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-8 sm:flex sm:gap-16">
-                    <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-8 max-sm:justify-items-center sm:flex sm:gap-16">
+                    <div className="flex flex-col gap-2 max-sm:items-center">
                         <p className="text-sm font-semibold text-black">Product</p>
                         {productLinks.map((link) => (
                             <Link key={link.to} to={link.to} className="text-sm text-dark-200 hover:text-black">
@@ -47,7 +47,7 @@ const Footer = () => {
                             </Link>
                         ))}
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 max-sm:items-center">
                         <p className="text-sm font-semibold text-black">Account</p>
                         {accountLinks.map((link) => (
                             <Link key={link.to} to={link.to} className="text-sm text-dark-200 hover:text-black">
@@ -56,7 +56,7 @@ const Footer = () => {
                         ))}
                     </div>
                     {supportLinks.length > 0 && (
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 max-sm:items-center">
                             <p className="text-sm font-semibold text-black">Support</p>
                             {supportLinks.map((link) => (
                                 <Link key={link.to} to={link.to} className="text-sm text-dark-200 hover:text-black">

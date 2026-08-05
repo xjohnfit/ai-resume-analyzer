@@ -281,7 +281,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
             <Navbar />
             <MobileNavbar />
             <section className="main-section gap-3 pt-6 pb-4">
-                <div className="flex w-full max-w-300 items-stretch justify-between gap-4">
+                <div className="flex w-full max-w-300 flex-col items-stretch gap-4 sm:flex-row sm:justify-between">
                     <div className="flex items-center gap-4">
                         <div className="group relative shrink-0">
                             <label htmlFor="profilePhoto" className="block cursor-pointer">
@@ -289,10 +289,10 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                                     <img
                                         src={draft.photoUrl}
                                         alt="Profile photo"
-                                        className="h-36 w-36 rounded-full border border-gray-200 object-cover"
+                                        className="h-20 w-20 rounded-full border border-gray-200 object-cover sm:h-36 sm:w-36"
                                     />
                                 ) : (
-                                    <div className="flex h-36 w-36 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-dark-200">
+                                    <div className="flex h-20 w-20 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-dark-200 sm:h-36 sm:w-36">
                                         <UserRound className="h-6 w-6" />
                                     </div>
                                 )}
@@ -331,21 +331,22 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                     <input type="hidden" name="photoUrl" value={draft.photoUrl} />
 
                     <div className="profile-category-card lg:col-span-2" style={{ backgroundColor: "#606beb" }}>
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 text-white">
-                                <Upload className="h-4 w-4" />
-                                <p className="text-sm font-medium">
-                                    Have a resume? Import it to populate the fields automatically.
+                        <div className="flex flex-row flex-nowrap items-center justify-between gap-2 sm:flex-wrap">
+                            <div className="flex min-w-0 items-center gap-2 text-white">
+                                <Upload className="h-4 w-4 shrink-0" />
+                                <p className="truncate text-xs font-medium sm:text-sm">
+                                    <span className="sm:hidden">Import your resume</span>
+                                    <span className="hidden sm:inline">Have a resume? Import it to populate the fields automatically.</span>
                                 </p>
                             </div>
-                            <div className="flex flex-col items-end gap-1">
+                            <div className="flex shrink-0 flex-col items-end gap-1">
                                 <label
                                     htmlFor="resumeUpload"
-                                    className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-medium text-[#606beb] transition-colors hover:bg-white/90"
+                                    className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium whitespace-nowrap text-[#606beb] transition-colors hover:bg-white/90 sm:px-4 sm:py-2"
                                 >
-                                    {isParsing ? "Analyzing resume..." : "Import from resume"}
+                                    {isParsing ? "Analyzing..." : "Import from resume"}
                                 </label>
-                                <p className="text-[10px] text-white/70">PDF only</p>
+                                <p className="hidden text-[10px] text-white/70 sm:block">PDF only</p>
                             </div>
                             <input
                                 id="resumeUpload"

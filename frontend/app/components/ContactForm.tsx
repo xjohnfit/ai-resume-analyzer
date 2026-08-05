@@ -53,7 +53,7 @@ const ContactForm = ({ idPrefix = "" }: ContactFormProps) => {
                     name="category"
                     required
                     defaultValue=""
-                    className="inset-shadow w-full rounded-2xl bg-white p-4 focus:outline-none"
+                    className="inset-shadow w-full appearance-none rounded-2xl bg-white p-4 focus:outline-none"
                 >
                     <option value="" disabled>Select a category</option>
                     {categories.map((category) => (

@@ -92,7 +92,7 @@
     @apply flex flex-col gap-6 w-full max-w-md bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg;
   }
   .main-section {
-    @apply flex flex-col items-center gap-8 pt-12 max-sm:mx-2 mx-15 pb-5;
+    @apply flex flex-col items-center gap-8 pt-12 max-sm:mx-4 mx-15 pb-5;
   }
   .page-heading {
     @apply flex flex-col items-center gap-8 max-w-4xl text-center max-sm:gap-4;
@@ -100,6 +100,10 @@
   .resumes-section {
     @apply grid w-full items-start gap-4;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
   }
 
   .dashboard-header {
@@ -119,11 +123,15 @@
   }
 
   .dashboard-tabs {
-    @apply mt-3 flex flex-wrap gap-2;
+    @apply mt-3 flex gap-1.5 overflow-x-auto pb-1 sm:gap-2 sm:flex-wrap;
   }
 
   .tab-button {
-    @apply cursor-pointer whitespace-nowrap rounded-full border border-gray-200 px-4 py-1.5 text-sm font-medium text-dark-200 transition-colors;
+    @apply cursor-pointer whitespace-nowrap rounded-full border border-gray-200 px-2.5 py-1 text-xs font-medium text-dark-200 transition-colors focus:outline-none sm:px-4 sm:py-1.5 sm:text-sm;
+
+    &::-moz-focus-inner {
+      border: 0;
+    }
 
     &:not(.tab-button-active):hover {
       @apply bg-gray-50;
@@ -131,11 +139,11 @@
   }
 
   .tab-button-active {
-    @apply primary-gradient border-transparent text-white;
+    @apply primary-gradient border-0 text-white;
   }
 
   .empty-state {
-    @apply flex flex-col items-center gap-4 w-full max-w-xl px-8 py-16 text-center;
+    @apply flex flex-col items-center gap-4 w-full max-w-xl px-6 py-10 text-center sm:px-8 sm:py-16;
   }
 
   .resume-card {
@@ -196,22 +204,6 @@
 
   .profile-form-grid {
     @apply grid w-full grid-cols-1 gap-2 sm:grid-cols-2;
-  }
-
-  .patterns-letter {
-    @apply mx-auto flex w-full max-w-300 flex-col gap-3 p-6 text-[15px] leading-relaxed text-dark-200 sm:p-10;
-
-    h2 {
-      @apply mt-4 text-lg font-semibold text-black first:mt-0;
-    }
-  }
-
-  .patterns-letter-section {
-    @apply flex flex-col gap-3;
-  }
-
-  .patterns-roadmap-list {
-    @apply flex list-decimal flex-col gap-3 pl-5;
   }
 }
 

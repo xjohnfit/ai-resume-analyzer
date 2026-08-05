@@ -267,6 +267,10 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                     Account
                                 </h2>
                                 <div className="flex flex-col divide-y divide-black/10 text-sm">
+                                    <div className="flex items-center justify-between gap-4 py-3">
+                                        <span className="text-dark-200">Account ID</span>
+                                        <span className="truncate font-mono text-xs font-medium text-black">{user.id}</span>
+                                    </div>
                                     <div className="flex items-center justify-between py-3">
                                         <span className="text-dark-200">Name</span>
                                         <span className="font-medium text-black">{user.name}</span>

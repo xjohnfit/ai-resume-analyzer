@@ -46,10 +46,12 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
             <MobileNavbar isAuthenticated={isAuthenticated} />
 
             <section className="main-section items-center justify-center">
-                <div className="gradient-border flex w-full max-w-lg flex-col gap-4 p-8">
+                <div className="flex w-full max-w-lg flex-col gap-4 p-8">
                     <div className="flex flex-col items-center gap-2 text-center">
-                        <MessageCircle className="h-8 w-8 text-[#606beb]" />
-                        <h1 className="text-2xl! font-semibold">Get in touch</h1>
+                        <div className="flex items-center gap-2">
+                            <MessageCircle className="h-8 w-8 shrink-0 text-[#606beb]" />
+                            <h1 className="text-2xl! font-semibold">Get in touch</h1>
+                        </div>
                         <p className="text-dark-200">
                             Questions, feedback, or something not working right? <br /> Fill out the form below and we'll get back to you.
                         </p>

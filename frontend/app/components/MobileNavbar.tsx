@@ -11,18 +11,18 @@ const MobileNavbar = ({ isAuthenticated = true }: MobileNavbarProps) => {
 
     return (
         <div className="relative w-full md:hidden">
-            <nav className="navbar mx-4 w-auto">
+            <nav className="navbar mx-4 w-auto px-4">
                 <Link to={isAuthenticated ? "/dashboard" : "/"} onClick={() => setIsOpen(false)}>
-                    <p className="text-2xl font-bold text-gradient">APPLYZE</p>
+                    <p className="text-lg font-bold text-gradient">APPLYZE</p>
                 </Link>
                 <button
                     type="button"
                     onClick={() => setIsOpen((open) => !open)}
-                    className="secondary-button"
+                    className="secondary-button px-3 py-1.5 text-xs"
                     aria-label={isOpen ? "Close menu" : "Open menu"}
                     aria-expanded={isOpen}
                 >
-                    {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </button>
             </nav>
 
@@ -38,9 +38,9 @@ const MobileNavbar = ({ isAuthenticated = true }: MobileNavbarProps) => {
                                 <User className="h-4 w-4" />
                                 Profile
                             </Link>
-                            <Link to="/patterns" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
+                            <Link to="/insights" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
                                 <Lightbulb className="h-4 w-4" />
-                                Patterns
+                                Insights
                             </Link>
                             <Link to="/settings" className="secondary-button justify-start" onClick={() => setIsOpen(false)}>
                                 <Settings className="h-4 w-4" />
