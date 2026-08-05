@@ -13,6 +13,8 @@ export default [
   route("patterns", "routes/patterns.tsx"),
   route("settings", "routes/settings.tsx"),
   route("verify-email", "routes/verify-email.tsx"),
+  route("forgot-password", "routes/forgot-password.tsx"),
+  route("reset-password", "routes/reset-password.tsx"),
   route("contact", "routes/contact.tsx"),
   route("logout", "routes/logout.tsx"),
 ] satisfies RouteConfig;

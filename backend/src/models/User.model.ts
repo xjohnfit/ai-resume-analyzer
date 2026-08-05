@@ -93,6 +93,19 @@ const emailVerificationTokenSchema = new Schema<EmailVerificationToken>(
     { _id: false },
 );
 
+interface PasswordResetToken {
+    tokenHash: string;
+    expiresAt: Date;
+}
+
+const passwordResetTokenSchema = new Schema<PasswordResetToken>(
+    {
+        tokenHash: { type: String, required: true },
+        expiresAt: { type: Date, required: true },
+    },
+    { _id: false },
+);
+
 export interface UserDocument {
     name: string;
     email: string;
@@ -102,6 +115,7 @@ export interface UserDocument {
     usage: Usage;
     emailVerified: boolean;
     emailVerificationToken?: EmailVerificationToken;
+    passwordResetToken?: PasswordResetToken;
 }
 
 const userSchema = new Schema<UserDocument>(
@@ -120,6 +134,7 @@ const userSchema = new Schema<UserDocument>(
         usage: { type: usageSchema, default: () => ({}) },
         emailVerified: { type: Boolean, default: false },
         emailVerificationToken: { type: emailVerificationTokenSchema },
+        passwordResetToken: { type: passwordResetTokenSchema },
     },
     {
         timestamps: true,

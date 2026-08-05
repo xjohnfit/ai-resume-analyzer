@@ -7,6 +7,8 @@ import {
     deleteAccount,
     verifyEmail,
     resendVerification,
+    forgotPassword,
+    resetPassword,
     me,
 } from '../controllers/auth.controllers';
 import { requireAuth } from '../middleware/requireAuth.middleware';
@@ -19,6 +21,8 @@ router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.post('/verify-email', verifyEmail);
 router.post('/resend-verification', requireAuth, resendVerification);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 router.get('/me', requireAuth, me);
 router.delete('/me', requireAuth, deleteAccount);
 

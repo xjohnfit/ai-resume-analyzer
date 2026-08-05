@@ -57,3 +57,19 @@ export async function sendVerificationEmail(email: string, rawToken: string) {
         `,
     });
 }
+
+export async function sendPasswordResetEmail(email: string, rawToken: string) {
+    const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${rawToken}`;
+
+    await resend.emails.send({
+        from: env.RESEND_FROM_EMAIL,
+        to: email,
+        subject: 'Reset your Applyze password',
+        html: `
+            <p>We received a request to reset your Applyze password.</p>
+            <p><a href="${resetUrl}">Reset password</a></p>
+            <p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email — your password won't be changed.</p>
+        `,
+    });
+}
+

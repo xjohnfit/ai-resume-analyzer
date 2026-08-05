@@ -10,12 +10,13 @@ import {
     hashToken,
     createEmailVerificationToken,
     EMAIL_VERIFICATION_TOKEN_TTL_MS,
+    createPasswordResetToken,
 } from '../services/auth.service';
 import { resetUsageIfNeeded } from '../services/usage.service';
 import { env } from '../config/env';
 import { Profile } from '../models/Profile.model';
 import { cancelSubscriptionImmediately } from '../services/stripe.service';
-import { sendVerificationEmail } from '../services/email.service';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
 
 const { NODE_ENV } = env;
 
@@ -274,6 +275,67 @@ export async function resendVerification(req: Request, res: Response) {
         return res.status(502).json({ error: 'Failed to send email. Please try again.' });
     }
 
+    res.json({ success: true });
+}
+
+const forgotPasswordSchema = z.object({
+    email: z.email(),
+});
+
+export async function forgotPassword(req: Request, res: Response) {
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    const user = await User.findOne({ email: parsed.data.email });
+
+    if (user) {
+        const reset = createPasswordResetToken();
+        user.passwordResetToken = {
+            tokenHash: reset.tokenHash,
+            expiresAt: reset.expiresAt,
+        };
+        await user.save();
+
+        try {
+            await sendPasswordResetEmail(user.email, reset.token);
+        } catch (err) {
+            console.error('Failed to send password reset email:', err);
+        }
+    }
+
+    res.json({ success: true, message: "If that email is registered, we've sent a password reset link." });
+}
+
+const resetPasswordSchema = z.object({
+    token: z.string().min(1),
+    newPassword: z.string().min(8),
+});
+
+export async function resetPassword(req: Request, res: Response) {
+    const parsed = resetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    const tokenHash = hashToken(parsed.data.token);
+    const user = await User.findOne({
+        'passwordResetToken.tokenHash': tokenHash,
+        'passwordResetToken.expiresAt': { $gt: new Date() },
+    });
+
+    if (!user) {
+        return res.status(400).json({ error: 'Invalid or expired reset link' });
+    }
+
+    user.passwordHash = await hashPassword(parsed.data.newPassword);
+    user.passwordResetToken = undefined;
+    user.refreshTokens = [];
+    await user.save();
+
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
     res.json({ success: true });
 }
 
