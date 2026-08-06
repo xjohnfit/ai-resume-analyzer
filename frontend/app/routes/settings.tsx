@@ -461,10 +461,27 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                                             </p>
                                             <fetcher.Form method="post" className="flex flex-row flex-nowrap items-center gap-2">
                                                 <input
+                                                    type="text"
+                                                    name="fakeusernameremembered"
+                                                    autoComplete="off"
+                                                    tabIndex={-1}
+                                                    aria-hidden="true"
+                                                    style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }}
+                                                />
+                                                <input
+                                                    type="password"
+                                                    name="fakepasswordremembered"
+                                                    autoComplete="off"
+                                                    tabIndex={-1}
+                                                    aria-hidden="true"
+                                                    style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }}
+                                                />
+                                                <input
                                                     id="mfaCode"
                                                     name="code"
                                                     type="text"
                                                     inputMode="numeric"
+                                                    autoComplete="one-time-code"
                                                     aria-label="Code"
                                                     required
                                                     className="w-20 shrink-0 p-2 text-center text-sm tracking-wider"

@@ -264,11 +264,8 @@ export default function Landing() {
             </section>
 
             {isModalOpen && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-                    onClick={() => navigate("/")}
-                >
-                    <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+                    <div className="relative">
                         <button
                             type="button"
                             onClick={() => navigate("/")}

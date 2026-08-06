@@ -83,9 +83,25 @@ export default function Login() {
 
                 <Form method="post" className="flex flex-col gap-4">
                     <input type="hidden" name="challengeToken" value={challengeToken} />
+                    <input
+                        type="text"
+                        name="fakeusernameremembered"
+                        autoComplete="off"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }}
+                    />
+                    <input
+                        type="password"
+                        name="fakepasswordremembered"
+                        autoComplete="off"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }}
+                    />
                     <div className="form-div">
                         <label htmlFor="code">Code</label>
-                        <input id="code" name="code" type="text" inputMode="numeric" autoFocus required />
+                        <input id="code" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" required />
                     </div>
                     <button className="auth-button" type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Verifying..." : "Verify & log in"}
