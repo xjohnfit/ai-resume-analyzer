@@ -54,6 +54,34 @@
   form {
     @apply flex flex-col items-start gap-8 w-full;
   }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #8e98ff #f0f4ff;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background-color: #f0f4ff;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #8e98ff;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #606beb;
+  }
 }
 
 @layer components {

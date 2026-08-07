@@ -5,17 +5,32 @@ interface Job {
     requiredSkills: string[];
 }
 
-type ApplicationStatus = "live" | "sent" | "rejected" | "skipped";
+type ApplicationStatus =
+    | "saved"
+    | "applied"
+    | "interviewing"
+    | "offer"
+    | "rejected"
+    | "withdrawn";
 
-interface Resume {
-    id: string;
-    companyName?: string;
-    jobTitle?: string;
-    imagePath: string;
-    resumePath: string;
-    feedback: Feedback;
+interface Application {
+    _id: string;
+    companyName: string;
+    jobTitle: string;
+    jobDescriptionText: string;
     status: ApplicationStatus;
-    statusNote: string;
+    currentDocumentId?: string;
+    currentFeedbackReportId?: string;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface FeedbackReport extends Feedback {
+    _id: string;
+    applicationId: string;
+    modelUsed: string;
+    createdAt: string;
 }
 
 interface RecurringPattern {
@@ -48,6 +63,7 @@ interface Feedback {
         tips: {
             type: "good" | "improve";
             tip: string;
+            explanation: string;
         }[];
     };
     toneAndStyle: {

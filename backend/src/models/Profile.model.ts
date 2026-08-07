@@ -9,7 +9,7 @@ interface ContactInfo {
     website?: string;
 }
 
-const contactInfoSchema = new Schema<ContactInfo>(
+export const contactInfoSchema = new Schema<ContactInfo>(
     {
         fullName: { type: String, trim: true },
         email: { type: String, trim: true },
@@ -24,15 +24,17 @@ const contactInfoSchema = new Schema<ContactInfo>(
 interface WorkHistoryEntry {
     company: string;
     title: string;
+    location?: string;
     startDate: string;
     endDate?: string;
     current: boolean;
     bullets: string[];
 }
 
-const workHistorySchema = new Schema<WorkHistoryEntry>({
+export const workHistorySchema = new Schema<WorkHistoryEntry>({
     company: { type: String, required: true, trim: true },
     title: { type: String, required: true, trim: true },
+    location: { type: String, trim: true },
     startDate: { type: String, required: true },
     endDate: { type: String },
     current: { type: Boolean, default: false },
@@ -46,7 +48,7 @@ interface ProjectEntry {
     link?: string;
 }
 
-const projectSchema = new Schema<ProjectEntry>({
+export const projectSchema = new Schema<ProjectEntry>({
     name: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
     bullets: { type: [String], default: [] },
@@ -57,15 +59,17 @@ interface EducationEntry {
     institution: string;
     degree: string;
     fieldOfStudy?: string;
+    location?: string;
     startDate?: string;
     endDate?: string;
 }
 
-const educationSchema = new Schema<EducationEntry>(
+export const educationSchema = new Schema<EducationEntry>(
     {
         institution: { type: String, required: true, trim: true },
         degree: { type: String, required: true, trim: true },
         fieldOfStudy: { type: String, trim: true },
+        location: { type: String, trim: true },
         startDate: { type: String },
         endDate: { type: String },
     },
@@ -78,7 +82,7 @@ interface CertificationEntry {
     date?: string;
 }
 
-const certificationSchema = new Schema<CertificationEntry>(
+export const certificationSchema = new Schema<CertificationEntry>(
     {
         name: { type: String, required: true, trim: true },
         issuer: { type: String, trim: true },
@@ -87,16 +91,32 @@ const certificationSchema = new Schema<CertificationEntry>(
     { _id: false },
 );
 
-export interface ProfileDocument {
-    userId: Types.ObjectId;
-    photoUrl?: string;
+interface SkillCategory {
+    category: string;
+    items: string[];
+}
+
+export const skillCategorySchema = new Schema<SkillCategory>(
+    {
+        category: { type: String, required: true, trim: true },
+        items: { type: [String], default: [] },
+    },
+    { _id: false },
+);
+
+export interface ResumeContent {
     contactInfo: ContactInfo;
     summary: string;
     workHistory: WorkHistoryEntry[];
     projects: ProjectEntry[];
-    skills: string[];
+    skills: SkillCategory[];
     education: EducationEntry[];
     certifications: CertificationEntry[];
+}
+
+export interface ProfileDocument extends ResumeContent {
+    userId: Types.ObjectId;
+    photoUrl?: string;
 }
 
 const profileSchema = new Schema<ProfileDocument>(
@@ -112,7 +132,7 @@ const profileSchema = new Schema<ProfileDocument>(
         summary: { type: String, default: '', trim: true },
         workHistory: { type: [workHistorySchema], default: [] },
         projects: { type: [projectSchema], default: [] },
-        skills: { type: [String], default: [] },
+        skills: { type: [skillCategorySchema], default: [] },
         education: { type: [educationSchema], default: [] },
         certifications: { type: [certificationSchema], default: [] },
     },

@@ -5,6 +5,7 @@ import {
     parseResume,
     getPhotoUploadSignature,
     updateProfilePhoto,
+    previewProfilePdf,
 } from '../controllers/profile.controllers';
 import { requireAuth } from '../middleware/requireAuth.middleware';
 
@@ -15,5 +16,7 @@ router.put('/', requireAuth, updateProfile);
 router.post('/parse-resume', requireAuth, parseResume);
 router.get('/photo-upload-signature', requireAuth, getPhotoUploadSignature);
 router.patch('/photo', requireAuth, updateProfilePhoto);
+router.post('/preview-pdf', requireAuth, previewProfilePdf);
+
 
 export default router;

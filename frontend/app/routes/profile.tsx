@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Form, useActionData, useNavigation } from "react-router";
 import {
     IdCard,
@@ -25,9 +25,11 @@ import {
     type ProjectEntry,
     type EducationEntry,
     type CertificationEntry,
+    type SkillCategory,
 } from "~/stores/profileFormStore";
 import Navbar from "~/components/Navbar";
 import MobileNavbar from "~/components/MobileNavbar";
+import AnalyzingModal from "~/components/AnalyzingModal";
 import { extractTextFromPdf } from "~/lib/extractResumeText.client";
 import { useToastStore } from "~/stores/toastStore";
 
@@ -56,10 +58,7 @@ export async function action({ request }: Route.ActionArgs) {
             website: String(formData.get("website") ?? ""),
         },
         summary: String(formData.get("summary") ?? ""),
-        skills: String(formData.get("skills") ?? "")
-            .split(",")
-            .map((skill) => skill.trim())
-            .filter(Boolean),
+        skills: JSON.parse(String(formData.get("skills") ?? "[]")),
         workHistory: stripEmptyBullets(JSON.parse(String(formData.get("workHistory") ?? "[]"))),
         projects: stripEmptyBullets(JSON.parse(String(formData.get("projects") ?? "[]"))),
         education: JSON.parse(String(formData.get("education") ?? "[]")),
@@ -114,6 +113,7 @@ function removeAt<T>(array: T[], index: number): T[] {
 const emptyWorkHistoryEntry: WorkHistoryEntry = {
     company: "",
     title: "",
+    location: "",
     startDate: "",
     endDate: "",
     current: false,
@@ -126,11 +126,14 @@ const emptyEducationEntry: EducationEntry = {
     institution: "",
     degree: "",
     fieldOfStudy: "",
+    location: "",
     startDate: "",
     endDate: "",
 };
 
 const emptyCertificationEntry: CertificationEntry = { name: "", issuer: "", date: "" };
+
+const emptySkillCategory: SkillCategory = { category: "", items: [] };
 
 export default function Profile({ loaderData }: Route.ComponentProps) {
     const { profile } = loaderData;
@@ -152,8 +155,6 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
 
     const [isParsing, setIsParsing] = useState(false);
     const [parseError, setParseError] = useState<string | null>(null);
-    const [parsingProgress, setParsingProgress] = useState(0);
-    const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     async function handleResumeUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -162,11 +163,6 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
 
         setIsParsing(true);
         setParseError(null);
-        setParsingProgress(0);
-
-        progressIntervalRef.current = setInterval(() => {
-            setParsingProgress((prev) => (prev >= 90 ? prev : prev + (90 - prev) * 0.15));
-        }, 200);
 
         try {
             const rawText = await extractTextFromPdf(file);
@@ -181,15 +177,13 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
             }
 
             const data = await response.json();
-            if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-            setParsingProgress(100);
             setDraft({ ...mapProfileToDraft(data), photoUrl: draft.photoUrl });
             addToast("Resume imported and populated — check the data before saving.", "success");
-            await new Promise((resolve) => setTimeout(resolve, 400));
         } catch {
-            setParseError("Couldn't read that resume. Please try again or fill the form manually.");
+            const message = "Couldn't read that resume. Please try again or fill the form manually.";
+            setParseError(message);
+            addToast(message, "error");
         } finally {
-            if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
             setIsParsing(false);
         }
     }
@@ -263,21 +257,12 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
 
     return (
         <main className="bg-[url('/images/bg-main.svg')] bg-cover">
-            {isParsing && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                    <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-                        <h3 className="mb-1 text-base font-semibold text-black">Analyzing your resume...</h3>
-                        <p className="mb-4 text-sm text-dark-200">This usually takes a few seconds.</p>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                            <div
-                                className="h-full rounded-full bg-[#606beb] transition-all duration-300 ease-out"
-                                style={{ width: `${parsingProgress}%` }}
-                            />
-                        </div>
-                        <p className="mt-2 text-right text-xs text-dark-200">{Math.round(parsingProgress)}%</p>
-                    </div>
-                </div>
-            )}
+            <AnalyzingModal
+                active={isParsing}
+                title="Analyzing your resume…"
+                description="This usually takes a few seconds — AI is extracting your work history, skills, and education from the PDF."
+                warning="Please don't refresh or close this page while this runs."
+            />
             <Navbar />
             <MobileNavbar />
             <section className="main-section gap-3 pt-6 pb-4">
@@ -426,7 +411,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                     </div>
                     </div>
 
-                    <div className="profile-category-card bg-violet-100">
+                    <div className="profile-category-card bg-violet-100 lg:col-span-2">
                     <h3 className="flex items-center gap-2 text-base font-semibold">
                         <FileText className="h-4 w-4 text-[#606beb]" />
                         Summary
@@ -436,31 +421,66 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                         <textarea
                             id="summary"
                             name="summary"
-                            rows={4}
+                            rows={8}
                             value={draft.summary}
                             onChange={(e) => updateSummary(e.target.value)}
                         />
                     </div>
                     </div>
 
-                    <div className="profile-category-card bg-indigo-100">
+                    <div className="profile-category-card bg-indigo-100 lg:col-span-2">
                     <h3 className="flex items-center gap-2 text-base font-semibold">
                         <Sparkles className="h-4 w-4 text-[#606beb]" />
                         Skills
                     </h3>
-                    <div className="form-div flex-1">
-                        <label htmlFor="skills">Skills (comma-separated)</label>
-                        <textarea
-                            id="skills"
-                            name="skills"
-                            rows={4}
-                            className="flex-1 resize-none"
-                            value={draft.skills.join(", ")}
-                            onChange={(e) =>
-                                updateSkills(e.target.value.split(",").map((skill) => skill.trim()))
-                            }
-                        />
+                    <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {draft.skills.map((group, index) => (
+                        <div key={index} className="profile-entry-card">
+                            <div className="form-div">
+                                <label htmlFor={`skills-${index}-category`}>Category</label>
+                                <input
+                                    id={`skills-${index}-category`}
+                                    placeholder="e.g. Frontend"
+                                    value={group.category}
+                                    onChange={(e) =>
+                                        updateSkills(updateAt(draft.skills, index, { category: e.target.value }))
+                                    }
+                                />
+                            </div>
+                            <div className="form-div">
+                                <label htmlFor={`skills-${index}-items`}>Skills (comma-separated)</label>
+                                <textarea
+                                    id={`skills-${index}-items`}
+                                    rows={2}
+                                    value={group.items.join(", ")}
+                                    onChange={(e) =>
+                                        updateSkills(
+                                            updateAt(draft.skills, index, {
+                                                items: e.target.value.split(",").map((item) => item.trim()),
+                                            }),
+                                        )
+                                    }
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                className="secondary-button w-fit px-3 py-1.5 text-xs"
+                                onClick={() => updateSkills(removeAt(draft.skills, index))}
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Remove
+                            </button>
+                        </div>
+                    ))}
                     </div>
+                    <button
+                        type="button"
+                        className="secondary-button w-fit px-3 py-1.5 text-xs"
+                        onClick={() => updateSkills([...draft.skills, emptySkillCategory])}
+                    >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add skill category
+                    </button>
                     </div>
 
                     <div className="profile-category-card bg-sky-100 lg:col-span-2">
@@ -470,7 +490,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                     </h3>
                     {draft.workHistory.map((entry, index) => (
                         <div key={index} className="profile-entry-card">
-                            <div className="profile-form-grid lg:grid-cols-4">
+                            <div className="profile-form-grid lg:grid-cols-5">
                                 <div className="form-div">
                                     <label htmlFor={`workHistory-${index}-company`}>Company</label>
                                     <input
@@ -488,6 +508,17 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                                         value={entry.title}
                                         onChange={(e) =>
                                             setWorkHistory(updateAt(draft.workHistory, index, { title: e.target.value }))
+                                        }
+                                    />
+                                </div>
+                                <div className="form-div">
+                                    <label htmlFor={`workHistory-${index}-location`}>Location</label>
+                                    <input
+                                        id={`workHistory-${index}-location`}
+                                        placeholder="Remote"
+                                        value={entry.location}
+                                        onChange={(e) =>
+                                            setWorkHistory(updateAt(draft.workHistory, index, { location: e.target.value }))
                                         }
                                     />
                                 </div>
@@ -534,7 +565,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                                 <label htmlFor={`workHistory-${index}-bullets`}>Bullet points (one per line)</label>
                                 <textarea
                                     id={`workHistory-${index}-bullets`}
-                                    rows={3}
+                                    rows={15}
                                     value={entry.bullets.join("\n")}
                                     onChange={(e) =>
                                         setWorkHistory(
@@ -674,6 +705,17 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                                     />
                                 </div>
                                 <div className="form-div">
+                                    <label htmlFor={`education-${index}-location`}>Location</label>
+                                    <input
+                                        id={`education-${index}-location`}
+                                        placeholder="Manchester, NH"
+                                        value={entry.location}
+                                        onChange={(e) =>
+                                            setEducation(updateAt(draft.education, index, { location: e.target.value }))
+                                        }
+                                    />
+                                </div>
+                                <div className="form-div">
                                     <label htmlFor={`education-${index}-startDate`}>Start date</label>
                                     <input
                                         id={`education-${index}-startDate`}
@@ -776,6 +818,7 @@ export default function Profile({ loaderData }: Route.ComponentProps) {
                     </button>
                     </div>
 
+                    <input type="hidden" name="skills" value={JSON.stringify(draft.skills)} />
                     <input type="hidden" name="workHistory" value={JSON.stringify(draft.workHistory)} />
                     <input type="hidden" name="projects" value={JSON.stringify(draft.projects)} />
                     <input type="hidden" name="education" value={JSON.stringify(draft.education)} />

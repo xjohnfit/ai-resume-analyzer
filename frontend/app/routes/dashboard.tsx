@@ -4,23 +4,46 @@ import { Briefcase, TrendingUp, Inbox, Sparkles } from "lucide-react";
 import type { Route } from "./+types/dashboard";
 import Navbar from "../components/Navbar";
 import MobileNavbar from "../components/MobileNavbar";
-import { resumes } from "~/constants";
 import ResumeCard from "~/components/ResumeCard";
 import { requireUser } from "~/lib/session.server";
+import { apiFetch } from "~/lib/api.server";
 
 type Tab = "all" | ApplicationStatus;
 
 const tabs: { key: Tab; label: string }[] = [
     { key: "all", label: "All" },
-    { key: "live", label: "Live" },
+    { key: "saved", label: "Saved" },
+    { key: "applied", label: "Applied" },
+    { key: "interviewing", label: "Interviewing" },
+    { key: "offer", label: "Offer" },
     { key: "rejected", label: "Rejected" },
-    { key: "sent", label: "Built & Sent" },
-    { key: "skipped", label: "Skipped" },
+    { key: "withdrawn", label: "Withdrawn" },
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
     const user = await requireUser(request);
-    return { user };
+
+    const applicationsResponse = await apiFetch(request, "/api/applications");
+    const applications: Application[] = applicationsResponse.ok ? await applicationsResponse.json() : [];
+
+    // Application doesn't embed its score — fetch each analyzed application's
+    // FeedbackReport in parallel so cards can show a score without an extra round trip per click.
+    const scoreEntries = await Promise.all(
+        applications
+            .filter((application) => application.currentFeedbackReportId)
+            .map(async (application) => {
+                const response = await apiFetch(request, `/api/applications/${application._id}/feedback`);
+                if (!response.ok) return null;
+                const feedback: FeedbackReport = await response.json();
+                return [application._id, feedback.overallScore] as const;
+            }),
+    );
+
+    const scores = Object.fromEntries(
+        scoreEntries.filter((entry): entry is readonly [string, number] => entry !== null),
+    );
+
+    return { user, applications, scores };
 }
 
 export function meta({ }: Route.MetaArgs) {
@@ -31,16 +54,19 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-    const { user } = loaderData;
+    const { user, applications, scores } = loaderData;
     const [activeTab, setActiveTab] = useState<Tab>("all");
 
-    const averageScore = resumes.length > 0
-        ? Math.round(resumes.reduce((sum, r) => sum + r.feedback.overallScore, 0) / resumes.length)
+    const scoredApplications = applications.filter((application) => scores[application._id] !== undefined);
+    const averageScore = scoredApplications.length > 0
+        ? Math.round(
+            scoredApplications.reduce((sum, application) => sum + scores[application._id], 0) / scoredApplications.length,
+        )
         : 0;
 
-    const filteredResumes = activeTab === "all"
-        ? resumes
-        : resumes.filter((resume) => resume.status === activeTab);
+    const filteredApplications = activeTab === "all"
+        ? applications
+        : applications.filter((application) => application.status === activeTab);
 
     return <main className="bg-[url('/images/bg-main.svg')] bg-cover">
         <Navbar/>
@@ -50,16 +76,20 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 <div>
                     <h1 className="dashboard-title md:text-3xl">Welcome back, {user.name}</h1>
                     <p className="dashboard-subtitle">Review your submissions and check AI-powered feedback.</p>
-                    {resumes.length > 0 && (
+                    {applications.length > 0 && (
                         <p className="dashboard-stats-inline">
                             <Briefcase className="h-3.5 w-3.5" />
-                            {resumes.length} application{resumes.length === 1 ? "" : "s"}
-                            <span aria-hidden="true">·</span>
-                            <TrendingUp className="h-3.5 w-3.5" />
-                            {averageScore} avg. score
+                            {applications.length} application{applications.length === 1 ? "" : "s"}
+                            {scoredApplications.length > 0 && (
+                                <>
+                                    <span aria-hidden="true">·</span>
+                                    <TrendingUp className="h-3.5 w-3.5" />
+                                    {averageScore} avg. score
+                                </>
+                            )}
                         </p>
                     )}
-                    {resumes.length > 0 && (
+                    {applications.length > 0 && (
                         <div className="dashboard-tabs">
                             {tabs.map((tab) => (
                                 <button
@@ -80,11 +110,15 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                 </Link>
             </div>
 
-            {resumes.length > 0 ? (
+            {applications.length > 0 ? (
                 <div className="w-full max-w-300 mx-auto">
                     <div className="resumes-section">
-                        {filteredResumes.map((resume) => (
-                            <ResumeCard key={resume.id} resume={resume}/>
+                        {filteredApplications.map((application) => (
+                            <ResumeCard
+                                key={application._id}
+                                application={application}
+                                overallScore={scores[application._id]}
+                            />
                         ))}
                     </div>
                 </div>

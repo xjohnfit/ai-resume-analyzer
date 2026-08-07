@@ -3,6 +3,7 @@ import { create } from "zustand";
 export interface WorkHistoryEntry {
     company: string;
     title: string;
+    location: string;
     startDate: string;
     endDate: string;
     current: boolean;
@@ -20,6 +21,7 @@ export interface EducationEntry {
     institution: string;
     degree: string;
     fieldOfStudy: string;
+    location: string;
     startDate: string;
     endDate: string;
 }
@@ -28,6 +30,11 @@ export interface CertificationEntry {
     name: string;
     issuer: string;
     date: string;
+}
+
+export interface SkillCategory {
+    category: string;
+    items: string[];
 }
 
 export interface ProfileDraft {
@@ -43,7 +50,7 @@ export interface ProfileDraft {
     summary: string;
     workHistory: WorkHistoryEntry[];
     projects: ProjectEntry[];
-    skills: string[];
+    skills: SkillCategory[];
     education: EducationEntry[];
     certifications: CertificationEntry[];
 }
@@ -65,7 +72,7 @@ interface ProfileFormState {
     setPhotoUrl: (photoUrl: string) => void;
     updateContactInfo: (patch: Partial<ProfileDraft["contactInfo"]>) => void;
     updateSummary: (summary: string) => void;
-    updateSkills: (skills: string[]) => void;
+    updateSkills: (skills: SkillCategory[]) => void;
     setWorkHistory: (workHistory: WorkHistoryEntry[]) => void;
     setProjects: (projects: ProjectEntry[]) => void;
     setEducation: (education: EducationEntry[]) => void;

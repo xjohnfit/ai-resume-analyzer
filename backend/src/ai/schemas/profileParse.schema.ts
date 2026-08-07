@@ -27,6 +27,12 @@ export const profileParseSchema = z.object({
             z.object({
                 company: z.string(),
                 title: z.string(),
+                location: z
+                    .string()
+                    .optional()
+                    .describe(
+                        "The role's location as written, e.g. 'Remote' or 'New York, NY', if present",
+                    ),
                 startDate: z
                     .string()
                     .describe(
@@ -66,10 +72,19 @@ export const profileParseSchema = z.object({
             'Notable projects, only if listed separately from work history',
         ),
     skills: z
-        .array(z.string())
+        .array(
+            z.object({
+                category: z
+                    .string()
+                    .describe(
+                        "The skill category's label, e.g. 'Languages', 'Frontend', 'Cloud & DevOps' — infer sensible groupings from how the resume itself organizes them; if the resume just lists skills with no grouping, use a small number of sensible categories (e.g. 'Languages', 'Frameworks & Libraries', 'Tools & Platforms') rather than one giant uncategorized list",
+                    ),
+                items: z.array(z.string()).default([]),
+            }),
+        )
         .default([])
         .describe(
-            'Technical and professional skills mentioned anywhere in the resume',
+            'Technical and professional skills mentioned anywhere in the resume, grouped into categories',
         ),
     education: z
         .array(
@@ -77,6 +92,10 @@ export const profileParseSchema = z.object({
                 institution: z.string(),
                 degree: z.string(),
                 fieldOfStudy: z.string().optional(),
+                location: z
+                    .string()
+                    .optional()
+                    .describe("The institution's location as written, if present"),
                 startDate: z.string().optional(),
                 endDate: z.string().optional(),
             }),

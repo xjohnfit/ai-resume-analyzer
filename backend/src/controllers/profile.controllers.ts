@@ -3,6 +3,33 @@ import { z } from 'zod';
 import { Profile } from '../models/Profile.model';
 import { parseResumeText } from '../ai/chains/parseResume.chain';
 import { generatePhotoUploadSignature } from '../services/cloudinary.service';
+import { renderResumePdf } from '../pdf/renderResumePdf';
+
+export async function previewProfilePdf(req: Request, res: Response) {
+    const profile = await Profile.findOne({ userId: req.user!.userId });
+    if (!profile) {
+        return res
+            .status(404)
+            .json({
+                error: 'No profile found. Create one before generating a PDF.',
+            });
+    }
+
+    try {
+        const pdfBuffer = await renderResumePdf(profile);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename="resume.pdf"',
+        );
+        res.send(pdfBuffer);
+    } catch (err) {
+        console.error('preview-pdf failed:', err);
+        res.status(500).json({
+            error: 'Failed to generate PDF. Please try again.',
+        });
+    }
+}
 
 const contactInfoSchema = z.object({
     fullName: z.string().min(1),
@@ -16,6 +43,7 @@ const contactInfoSchema = z.object({
 const workHistorySchema = z.object({
     company: z.string().min(1),
     title: z.string().min(1),
+    location: z.string().optional(),
     startDate: z.string().min(1),
     endDate: z.string().optional(),
     current: z.boolean().default(false),
@@ -33,6 +61,7 @@ const educationSchema = z.object({
     institution: z.string().min(1),
     degree: z.string().min(1),
     fieldOfStudy: z.string().optional(),
+    location: z.string().optional(),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
 });
@@ -43,13 +72,18 @@ const certificationSchema = z.object({
     date: z.string().optional(),
 });
 
+const skillCategorySchema = z.object({
+    category: z.string().min(1),
+    items: z.array(z.string()).default([]),
+});
+
 const profileUpdateSchema = z.object({
-    photoUrl: z.string().optional().default(""),
+    photoUrl: z.string().optional().default(''),
     contactInfo: contactInfoSchema,
-    summary: z.string().default(""),
+    summary: z.string().default(''),
     workHistory: z.array(workHistorySchema).default([]),
     projects: z.array(projectSchema).default([]),
-    skills: z.array(z.string()).default([]),
+    skills: z.array(skillCategorySchema).default([]),
     education: z.array(educationSchema).default([]),
     certifications: z.array(certificationSchema).default([]),
 });
@@ -69,10 +103,11 @@ export async function parseResume(req: Request, res: Response) {
         res.json(result);
     } catch (err) {
         console.error('parse-resume failed:', err);
-        res.status(502).json({ error: 'Failed to parse resume. Please try again.' });
+        res.status(502).json({
+            error: 'Failed to parse resume. Please try again.',
+        });
     }
 }
-
 
 export async function getPhotoUploadSignature(req: Request, res: Response) {
     res.json(generatePhotoUploadSignature());

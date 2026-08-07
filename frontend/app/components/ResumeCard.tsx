@@ -1,23 +1,37 @@
-import {Link} from "react-router";
+import { Link } from "react-router";
+import { FileText } from "lucide-react";
 import ScoreCircle from "~/components/ScoreCircle";
 
-const statusBadgeClasses: Record<ApplicationStatus, string> = {
-    live: "bg-badge-green text-badge-green-text",
-    sent: "bg-badge-yellow text-badge-yellow-text",
+export const statusBadgeClasses: Record<ApplicationStatus, string> = {
+    saved: "bg-gray-100 text-gray-600",
+    applied: "bg-badge-yellow text-badge-yellow-text",
+    interviewing: "bg-badge-yellow text-badge-yellow-text",
+    offer: "bg-badge-green text-badge-green-text",
     rejected: "bg-badge-red text-badge-red-text",
-    skipped: "bg-gray-100 text-gray-600",
+    withdrawn: "bg-gray-100 text-gray-600",
 };
 
-const statusLabel: Record<ApplicationStatus, string> = {
-    live: "Active",
-    sent: "Awaiting response",
+export const statusLabel: Record<ApplicationStatus, string> = {
+    saved: "Saved",
+    applied: "Applied",
+    interviewing: "Interviewing",
+    offer: "Offer",
     rejected: "Rejected",
-    skipped: "Skipped",
+    withdrawn: "Withdrawn",
 };
 
-const ResumeCard = ({resume: {id, companyName, jobTitle, feedback, imagePath, status, statusNote}}: { resume: Resume }) => {
+const ResumeCard = ({
+    application,
+    overallScore,
+}: {
+    application: Application;
+    overallScore?: number;
+}) => {
+    const { _id, companyName, jobTitle, status, notes, jobDescriptionText } = application;
+    const caption = notes || `${jobDescriptionText.slice(0, 90)}${jobDescriptionText.length > 90 ? "…" : ""}`;
+
     return (
-        <Link to={`/resume/${id}`} className="resume-card animate-in fade-in duration-100">
+        <Link to={`/applications/${_id}`} className="resume-card animate-in fade-in duration-100">
             <div className="resume-card-header">
                 <div className="flex min-w-0 flex-col gap-1">
                     <span className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${statusBadgeClasses[status]}`}>
@@ -30,14 +44,19 @@ const ResumeCard = ({resume: {id, companyName, jobTitle, feedback, imagePath, st
                         {jobTitle}
                     </h3>
                 </div>
-                <div className="shrink-0">
-                    <ScoreCircle score={feedback.overallScore} size={52}></ScoreCircle>
-                </div>
+                {overallScore !== undefined && (
+                    <div className="shrink-0">
+                        <ScoreCircle score={overallScore} size={52}></ScoreCircle>
+                    </div>
+                )}
             </div>
-            <div className="gradient-border animate-in fade-in duration-1000 p-1">
-                <img src={imagePath} alt="Resume" className="h-32 w-full rounded-lg object-cover object-top"/>
+            <div className="gradient-border flex h-32 w-full items-center justify-center gap-2 animate-in fade-in duration-1000">
+                <FileText className="h-5 w-5 text-[#606beb]" />
+                <span className="text-sm font-medium text-dark-200">
+                    {overallScore !== undefined ? "Tailored Resume PDF" : "Not analyzed yet"}
+                </span>
             </div>
-            <p className="line-clamp-2 text-xs text-dark-200">{statusNote}</p>
+            <p className="line-clamp-2 text-xs text-dark-200">{caption}</p>
         </Link>
     );
 };
