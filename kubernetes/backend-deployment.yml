@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${APP_NAME}-backend
+  labels:
+    app: ${APP_NAME}-backend
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: ${APP_NAME}-backend
+  template:
+    metadata:
+      labels:
+        app: ${APP_NAME}-backend
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: backend
+        image: ${DOCKERHUB_USERNAME}/${APP_NAME}-backend:${IMAGE_TAG}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: ${BACKEND_PORT}
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "${BACKEND_PORT}"
+        - name: FRONTEND_URL
+          value: "https://${FRONTEND_DOMAIN}"
+        - name: CLOUDINARY_CLOUD_NAME
+          value: "${CLOUDINARY_CLOUD_NAME}"
+        - name: RESEND_FROM_EMAIL
+          value: "${RESEND_FROM_EMAIL}"
+        - name: CONTACT_RECEIVER_EMAIL
+          value: "${CONTACT_RECEIVER_EMAIL}"
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: MONGODB_URI
+        - name: JWT_ACCESS_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: JWT_ACCESS_SECRET
+        - name: JWT_REFRESH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: JWT_REFRESH_SECRET
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: STRIPE_SECRET_KEY
+        - name: STRIPE_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: STRIPE_WEBHOOK_SECRET
+        - name: STRIPE_PRICE_ID_MONTHLY
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: STRIPE_PRICE_ID_MONTHLY
+        - name: STRIPE_PRICE_ID_YEARLY
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: STRIPE_PRICE_ID_YEARLY
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: ANTHROPIC_API_KEY
+        - name: CLOUDINARY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: CLOUDINARY_API_KEY
+        - name: CLOUDINARY_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: CLOUDINARY_API_SECRET
+        - name: RESEND_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: RESEND_API_KEY
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: TWILIO_ACCOUNT_SID
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: TWILIO_AUTH_TOKEN
+        - name: TWILIO_VERIFY_SERVICE_SID
+          valueFrom:
+            secretKeyRef:
+              name: ${APP_NAME}-secrets
+              key: TWILIO_VERIFY_SERVICE_SID
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "15m"
+          limits:
+            memory: "256Mi"
+            cpu: "150m"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+        livenessProbe:
+          httpGet:
+            path: ${HEALTH_CHECK_PATH}
+            port: ${BACKEND_PORT}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: ${HEALTH_CHECK_PATH}
+            port: ${BACKEND_PORT}
+          initialDelaySeconds: 5
+          periodSeconds: 5

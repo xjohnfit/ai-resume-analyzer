@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${APP_NAME}-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  rules:
+  # Frontend - e.g. app.yourdomain.com
+  - host: ${FRONTEND_DOMAIN}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ${APP_NAME}-frontend
+            port:
+              number: 80
+  # Frontend - e.g. www.app.yourdomain.com
+  - host: www.${FRONTEND_DOMAIN}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ${APP_NAME}-frontend
+            port:
+              number: 80
+  # Backend API - e.g. api.app.yourdomain.com
+  - host: ${BACKEND_DOMAIN}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ${APP_NAME}-backend
+            port:
+              number: ${BACKEND_PORT}
+  tls:
+  - hosts:
+    - ${FRONTEND_DOMAIN}
+    - www.${FRONTEND_DOMAIN}
+    - ${BACKEND_DOMAIN}
+    secretName: ${APP_NAME}-tls
