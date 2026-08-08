@@ -232,7 +232,7 @@ export default function ApplicationDetail({ loaderData }: Route.ComponentProps) 
                         </div>
                     ) : (
                         !isAnalyzing && (
-                            <div className="empty-state gradient-border">
+                            <div className="empty-state">
                                 <p className="text-dark-200">
                                     This application hasn't been analyzed yet. Run an analysis to get a fit score,
                                     ATS feedback, and a resume tailored to this job description.

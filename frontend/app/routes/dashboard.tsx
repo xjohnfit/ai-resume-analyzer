@@ -123,8 +123,10 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                     </div>
                 </div>
             ) : (
-                <div className="empty-state gradient-border">
-                    <Inbox className="h-10 w-10 text-[#606beb]" />
+                <div className="empty-state">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#606beb]/10">
+                        <Inbox className="h-7 w-7 text-[#606beb]" />
+                    </div>
                     <h3 className="text-xl font-semibold">No applications yet</h3>
                     <p className="text-dark-200">Start a new analysis with a job description to get your first tailored resume and AI-powered fit report.</p>
                     <Link to="/applications/new" className="primary-button w-fit">

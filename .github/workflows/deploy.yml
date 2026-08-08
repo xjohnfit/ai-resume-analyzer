@@ -266,6 +266,21 @@ jobs:
           kubectl apply -f rendered/frontend-service.yml
           kubectl apply -f rendered/ingress.yml
 
+      - name: Force pod restart so updated Secret values are picked up
+        # A Deployment's env vars sourced via secretKeyRef are only read once,
+        # when a pod's container starts — updating the Secret's value above
+        # does NOT by itself restart any pod already running. If this run's
+        # image tag happens to be identical to what's already deployed (e.g.
+        # a secrets-only change with no new commit), `kubectl apply` on the
+        # Deployment sees no diff and skips the rollout entirely, silently
+        # leaving old secret values loaded in memory. Restarting
+        # unconditionally on every deploy guarantees the current Secret is
+        # always what's actually running, regardless of whether the image
+        # changed.
+        run: |
+          kubectl rollout restart "deployment/$APP_NAME-backend"
+          kubectl rollout restart "deployment/$APP_NAME-frontend"
+
       - name: Wait for rollout, roll back automatically on failure
         run: |
           kubectl rollout status "deployment/$APP_NAME-backend" --timeout=5m || { kubectl rollout undo "deployment/$APP_NAME-backend"; exit 1; }
