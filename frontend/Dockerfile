@@ -33,6 +33,17 @@ COPY ./package.json package-lock.json /app/
 COPY --from=production-dependencies-env --chown=nodejs:nodejs /app/node_modules /app/node_modules
 COPY --from=build-env --chown=nodejs:nodejs /app/build /app/build
 
+# npm is only needed to install the dependencies above — CMD below calls the
+# server script directly with `node`, so npm is never invoked at runtime.
+# Removing it (and its own bundled dependencies, e.g. a vulnerable `tar` —
+# CVE-2026-59873) keeps it out of the final image entirely instead of just
+# leaving it unused.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+           /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx \
+           /usr/local/bin/corepack
+
 # Switch to non-root user
 USER nodejs
 
@@ -48,5 +59,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the server
-CMD ["npm", "run", "start"]
+# Start the server (calling the script directly, bypassing npm, since npm
+# was removed from this image above)
+CMD ["node", "node_modules/@react-router/serve/dist/cli.js", "./build/server/index.js"]

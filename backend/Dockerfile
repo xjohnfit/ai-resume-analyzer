@@ -36,6 +36,16 @@ COPY package*.json ./
 RUN npm ci --only=production && \
     npm cache clean --force
 
+# npm is only needed to install the dependencies above — the app itself is
+# started with a plain `node` invocation, never `npm`. Removing npm (and its
+# own bundled dependencies, e.g. a vulnerable `tar` — CVE-2026-59873) keeps
+# it out of the final image entirely instead of just leaving it unused.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+           /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx \
+           /usr/local/bin/corepack
+
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
