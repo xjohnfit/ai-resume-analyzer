@@ -69,12 +69,14 @@ const subscriptionSchema = new Schema<Subscription>(
 
 interface Usage {
     analysesThisMonth: number;
+    chatMessagesThisMonth: number;
     resetAt: Date;
 }
 
 const usageSchema = new Schema<Usage>(
     {
         analysesThisMonth: { type: Number, default: 0 },
+        chatMessagesThisMonth: { type: Number, default: 0 },
         resetAt: { type: Date, default: Date.now },
     },
     { _id: false },

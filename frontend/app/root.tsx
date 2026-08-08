@@ -11,6 +11,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import Toaster from "./components/Toaster";
 import Footer from "./components/Footer";
+import ChatWidget from "./components/ChatWidget";
 import { getUser } from "./lib/session.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -44,6 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <Footer />
         <Toaster />
+        <ChatWidget />
         <ScrollRestoration />
         <Scripts />
       </body>

@@ -20,4 +20,5 @@ export default [
   route("reset-password", "routes/reset-password.tsx"),
   route("contact", "routes/contact.tsx"),
   route("logout", "routes/logout.tsx"),
+  route("chat", "routes/chat.ts"),
 ] satisfies RouteConfig;

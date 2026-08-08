@@ -11,6 +11,7 @@ import profileRoutes from './routes/profile.routes';
 import contactRoutes from './routes/contact.routes';
 import applicationRoutes from './routes/applications.routes';
 import documentRoutes from './routes/documents.routes';
+import chatRoutes from './routes/chat.routes';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'OK' });
